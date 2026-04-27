@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@main/assets/1.png" />
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <style>
-/* ─── RESET & TOKENS (same as before, unchanged for brevity) ─── */
+/* ─── RESET & TOKENS (unchanged) ─── */
 :root {
   --bg: #0a0a0b;
   --panel: rgba(255,255,255,.06);
@@ -946,7 +946,7 @@ section { position: relative; padding: 6rem 0; }
       <div class="hero-card-media"></div>
       <div class="hero-card-content">
         <small>✦ Handcrafted with care</small>
-        <strong>Curd Chilli, Vadam, Pickles & more</strong>
+        <strong>Thair Mulagai, Vadam, Pickles & more</strong>
         <p>Weight‑based ordering, smooth cart, and secure checkout – all for pure, additive‑free foods.</p>
       </div>
     </aside>
@@ -1118,6 +1118,9 @@ section { position: relative; padding: 6rem 0; }
     <span>© 2025 IYERVAL FOODS – Pure. Fresh. Preservative‑free.</span>
     <span>Handcrafted with ♥ in Palakkad, Kerala</span>
   </div>
+  <div style="text-align:center;font-size:0.6rem;color:var(--muted);margin-top:0.5rem;">
+    Product images may vary from actual items. All image copyrights belong to their respective owners.
+  </div>
 </footer>
 
 <!-- BACKDROP -->
@@ -1272,11 +1275,25 @@ const WEIGHT_OPTIONS = [
   { label: "1kg (×10)", multiplier: 10 }
 ];
 
+// ─── UPDATED MENU ITEMS ───
 const menuItems = [
-  { id: 1, name: "Curd Chilli", category: "Snacks", basePrice: 22, description: "Sun-dried curd chillies with a deep savoury kick – naturally preserved, no additives.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@main/images/1.jpg" },
-  { id: 2, name: "Karuvadam Basket", category: "Snacks", basePrice: 24, description: "Classic crunchy karuvadam, sun‑dried the traditional way – pure and crisp.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@main/images/2.jpg" },
-  { id: 3, name: "Avakaya Mango Pickle", category: "Meals", basePrice: 26, description: "Andhra-style mango pickle with aromatic spices – no vinegar, no preservatives.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@main/images/5.jpg" },
-  { id: 4, name: "Vadam Selection", category: "Snacks", basePrice: 21, description: "Assorted vadam, naturally sun‑dried – a crunchy, healthy snack for any meal.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@main/images/4.jpg" },
+  // Existing, renamed Thair Mulagai (was Curd Chilli)
+  { id: 1, name: "Thair Mulagai", category: "Snacks", basePrice: 120, description: "Curd-soaked sun-dried chillies, a spicy treat.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@main/images/1.jpg" },
+  // Existing Avakaya Mango Pickle – price updated
+  { id: 3, name: "Avakaya Mango Pickle", category: "Meals", basePrice: 60, description: "Andhra-style mango pickle with aromatic spices – no vinegar, no preservatives.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@main/images/5.jpg" },
+  
+  // New items
+  { id: 6, name: "Karuvadam", category: "Snacks", basePrice: 35, description: "Traditional sun-dried karuvadam, crispy and light.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@bc523026b580d0b017a8a22816939d60ccdc6e87/assets/1100x1100.jpeg" },
+  { id: 7, name: "Onion Karuvadam", category: "Snacks", basePrice: 40, description: "Crunchy onion-flavoured karuvadam.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@bc523026b580d0b017a8a22816939d60ccdc6e87/assets/Onion_1.webp" },
+  { id: 8, name: "Vazhathandu Karuvadam", category: "Snacks", basePrice: 42.5, description: "Delicious banana stem karuvadam.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@bc523026b580d0b017a8a22816939d60ccdc6e87/assets/kaipunnyam-unnithandu.webp" },
+  { id: 9, name: "Pavakkai Vathal", category: "Snacks", basePrice: 100, description: "Bitter gourd vathal, a healthy crispy snack.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@bc523026b580d0b017a8a22816939d60ccdc6e87/assets/images%20(1).jpeg" },
+  { id: 10, name: "Sambar Podi", category: "Meals", basePrice: 40, description: "Freshly ground sambar powder for authentic taste.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@bc523026b580d0b017a8a22816939d60ccdc6e87/assets/Sambar-Podi.webp" },
+  { id: 11, name: "Vathal Kuzhambu Mix", category: "Meals", basePrice: 60, description: "Spicy vathal kuzhambu paste for a tangy curry.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@bc523026b580d0b017a8a22816939d60ccdc6e87/assets/SriVaraha-Foods-Vatha-Kuzhambu-Mix-Paste-Vatha-Kulambu-2.webp" },
+  { id: 12, name: "Chundakkai Vathal", category: "Snacks", basePrice: 100, description: "Turkey berry vathal, a traditional delicacy.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@bc523026b580d0b017a8a22816939d60ccdc6e87/assets/Sundakkai-vathal.jpg" },
+  { id: 13, name: "Arisi Vadam", category: "Snacks", basePrice: 50, description: "Rice vadam, light and perfect for frying. (10 nos)", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@bc523026b580d0b017a8a22816939d60ccdc6e87/assets/Rice-Vadam-%E2%80%93-Jeera.jpg" },
+  { id: 14, name: "Poola Pappadam", category: "Snacks", basePrice: 50, description: "Tapioca rice pappadam, crisp and airy. (10 nos)", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@bc523026b580d0b017a8a22816939d60ccdc6e87/assets/TappiacoRicePappadam.webp" },
+  
+  // Test product (hidden)
   { id: 5, name: "Test Product (Rs.1)", category: "Drinks", basePrice: 1, description: "Hidden test item to verify the ordering flow. Free shipping.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@main/assets/1.png", hidden: true }
 ];
 
@@ -1350,13 +1367,11 @@ function calculateItemPrice(item, w) {
 }
 function hasRegularItems() { return state.cart.some(i => i.id !== 5); }
 
-// ★★★ UPDATED SHIPPING LOGIC ★★★
+// ★ Updated shipping logic: flat ₹70, free over ₹700
 function getShippingFee() {
   const hasRegular = state.cart.some(i => i.id !== 5);
-  if (!hasRegular) return 0; // only test product → free shipping
-
+  if (!hasRegular) return 0;
   const subtotal = getSubtotal();
-  // Free shipping if subtotal >= 700, otherwise flat 70 per order
   return subtotal >= 700 ? 0 : REGULAR_SHIPPING_FEE;
 }
 
