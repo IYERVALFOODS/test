@@ -160,7 +160,7 @@ ul, ol { list-style: none; }
 }
 
 /* ─── BUTTONS ─── */
-.icon-btn, .ghost-btn, .solid-btn, .filter-btn, .menu-card button,
+.icon-btn, .ghost-btn, .solid-btn, .menu-card button,
 .panel-btn, .quantity-btn, .remove-btn, .copy-btn, .gateway-btn,
 .checkout-submit, .checkout-open-btn, .tab-btn, .app-pay-btn, .scroll-top-btn {
   transition: all var(--ease);
@@ -397,7 +397,6 @@ section { position: relative; padding: 6rem 0; }
   display: flex; flex-wrap: wrap; justify-content: space-between;
   gap: 1rem; align-items: center; margin-bottom: 1.5rem;
 }
-.filter-row { display: flex; flex-wrap: wrap; gap: .5rem; }
 .search-box {
   position: relative; flex: 1; max-width: 280px; min-width: 180px;
 }
@@ -853,7 +852,7 @@ section { position: relative; padding: 6rem 0; }
   section { padding: 4rem 0; }
   .hero-grid { padding: 3rem 0 2.5rem; }
   .menu-grid, .contact-grid { grid-template-columns: 1fr; }
-  .toolbar, .hero-actions, .filter-row, .admin-actions, .footer-inner {
+  .toolbar, .hero-actions, .admin-actions, .footer-inner {
     flex-direction: column; align-items: stretch;
   }
   .search-box { max-width: none; }
@@ -978,12 +977,6 @@ section { position: relative; padding: 6rem 0; }
       <p>Browse by category, choose the right weight, and add each item – made the old‑fashioned way, with no hidden additives.</p>
     </div>
     <div class="toolbar">
-      <div class="filter-row" id="filterRow">
-        <button class="filter-btn active" type="button" data-filter="All">All</button>
-        <button class="filter-btn" type="button" data-filter="Meals">Meals</button>
-        <button class="filter-btn" type="button" data-filter="Snacks">Snacks</button>
-        <button class="filter-btn" type="button" data-filter="Drinks">Drinks</button>
-      </div>
       <div class="search-box">
         <span class="search-box-icon">🔍</span>
         <input type="text" id="menuSearchInput" placeholder="Search items..." />
@@ -1334,7 +1327,7 @@ async function fetchOrdersFromBackend(passcode) {
 const el = {};
 const ids = [
   'loadingScreen','navLinks','hamburgerBtn','adminToggleBtn','testModeBtn',
-  'filterRow','menuGrid','menuHint','menuSearchInput','cartFab','navCartBtn','navCartCount',
+  'menuGrid','menuHint','menuSearchInput','cartFab','navCartBtn','navCartCount',
   'fabCartLabel','cartPanel','cartItemsContainer','cartSubtotal','cartShipping',
   'cartTotal','checkoutBtn','closeCartBtn','backdrop','checkoutModal',
   'closeCheckoutBtn','checkoutForm','checkoutSummaryList','checkoutSubtotal',
@@ -1475,7 +1468,6 @@ function renderMenu() {
     <article class="menu-card" style="animation-delay:${idx * .06}s">
       <div class="menu-card-media">
         <img src="${item.image}" alt="${item.name}" loading="lazy" />
-        <span class="menu-tag">${item.category}</span>
       </div>
       <div class="menu-card-body">
         <div class="menu-top">
@@ -1934,14 +1926,6 @@ function updateActiveNav() {
 
 // ─── EVENT BINDING ───
 function bindEvents() {
-  // Filter
-  el.filterRow.addEventListener("click", e => {
-    const btn = e.target.closest("[data-filter]");
-    if (!btn) return;
-    state.selectedFilter = btn.dataset.filter;
-    document.querySelectorAll(".filter-btn").forEach(b => b.classList.toggle("active", b === btn));
-    renderMenu();
-  });
 
   // Menu search
   el.menuSearchInput.addEventListener("input", e => {
