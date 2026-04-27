@@ -1784,6 +1784,23 @@ function validateCheckoutForm() {
 }
 
 async function startRazorpayPayment() {
+  // ★ STOP if the form is not valid (name, phone, pincode, address)
+  const formData = validateCheckoutForm();
+  if (!formData) return;
+
+  // ★ BLOCK payment if cart contains ONLY the test product
+  const hasOnlyTest = state.cart.length === 1 && state.cart[0].id === 5;
+  if (hasOnlyTest) {
+    toast("Cannot place order with only Test Product. Add real items.", "error", 3000);
+    return;
+  }
+
+  // ★ BLOCK if any regular item is present but the total somehow is ₹1 (safety)
+  if (hasRegularItems() && parseFloat(el.checkoutTotal.textContent.replace("Rs.", "")) <= 1) {
+    toast("Invalid total. Please check your cart.", "error");
+    return;
+  }
+
   try {
     const total = parseFloat(el.checkoutTotal.textContent.replace("Rs.", ""));
     const res = await fetch(BACKEND_URL + "/create-order", {
@@ -2052,7 +2069,13 @@ function init() {
   state.adminVisible = false;
   state.testUnlocked = false;
   el.adminPanel.classList.remove("visible");
-  
+
+  // Remove test product from cart if test mode is off
+  if (!state.testUnlocked) {
+    state.cart = state.cart.filter(item => item.id !== 5);
+    saveState(STORAGE_KEYS.cart, state.cart);
+  }
+
   renderMenu();
   renderCart();
   renderOrders();
