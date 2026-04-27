@@ -1150,7 +1150,7 @@ section { position: relative; padding: 6rem 0; }
       <span style="font-weight:700;">Total</span>
       <strong class="highlight" id="cartTotal" style="font-size:1.1rem;">Rs.0.00</strong>
     </div>
-    <p class="cart-note" id="shippingNote">Shipping ₹70 for regular items. Test item ships free.</p>
+    <p class="cart-note" id="shippingNote">🚚 ₹70 shipping per order — FREE on orders ₹700+</p>
     <button class="checkout-open-btn" id="checkoutBtn" type="button">Proceed to Checkout →</button>
   </div>
 </aside>
@@ -1237,21 +1237,33 @@ section { position: relative; padding: 6rem 0; }
 
 <script>
 /* ═══════════════════════════════════════════
-   IYERVAL FOODS – Admin mode is session-only (no persistence)
+   IYERVAL FOODS – Secure Backend Integration
    ═══════════════════════════════════════════ */
-const RAZORPAY_KEY = "rzp_test_SYWrfVzSNTbDes";
+
+// Backend URL (change to your Render URL after deployment)
+const BACKEND_URL = window.location.origin; // Uses same domain when served by backend
+
+// Config variables (fetched from backend)
+let RAZORPAY_KEY = "rzp_test_SYWrfVzSNTbDes"; // fallback
+let CONTACT_EMAIL = "iyervalfoods@gmail.com";
+let REGULAR_SHIPPING_FEE = 70;
+
+// Fetch config from backend
+fetch(BACKEND_URL + "/config")
+  .then(res => res.json())
+  .then(data => {
+    if (data.razorpayKey) RAZORPAY_KEY = data.razorpayKey;
+    if (data.shippingFee) REGULAR_SHIPPING_FEE = parseInt(data.shippingFee);
+    if (data.contactEmail) CONTACT_EMAIL = data.contactEmail;
+    // Update shipping note
+    document.getElementById('shippingNote').textContent = `🚚 ₹${REGULAR_SHIPPING_FEE} shipping per order — FREE on orders ₹700+`;
+  })
+  .catch(err => console.log("Config fetch failed, using defaults"));
+
 const STORAGE_KEYS = {
   cart: "iyerval-cart-v2",
   orders: "iyerval-orders",
-  // adminVisible is NOT persisted anymore – session only
 };
-let REGULAR_SHIPPING_FEE = 70;
-
-fetch("https://iyerval-backend.onrender.com/config")
-  .then(res => res.json())
-  .then(data => {
-    REGULAR_SHIPPING_FEE = data.shippingFee;
-  });
 
 const WEIGHT_OPTIONS = [
   { label: "100g (×1)", multiplier: 1 },
@@ -1273,10 +1285,33 @@ const state = {
   selectedFilter: "All",
   searchQuery: "",
   cart: loadState(STORAGE_KEYS.cart, []),
-  orders: loadState(STORAGE_KEYS.orders, []),
-  adminVisible: false,   // Always false on page load – session only
-  testUnlocked: false    // Always false on page load – session only
+  orders: [],
+  adminVisible: false,
+  testUnlocked: false
 };
+
+// Load orders from backend when admin logs in
+async function fetchOrdersFromBackend(passcode) {
+  try {
+    const res = await fetch(BACKEND_URL + "/admin/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ passcode })
+    });
+    const data = await res.json();
+    if (data.success) {
+      state.orders = data.orders;
+      saveState(STORAGE_KEYS.orders, state.orders);
+      renderOrders();
+      return true;
+    } else {
+      return false;
+    }
+  } catch (err) {
+    console.error(err);
+    return false;
+  }
+}
 
 // ─── DOM REFS ───
 const el = {};
@@ -1314,7 +1349,17 @@ function calculateItemPrice(item, w) {
   return Number((item.basePrice * m).toFixed(2));
 }
 function hasRegularItems() { return state.cart.some(i => i.id !== 5); }
-function getShippingFee() { return hasRegularItems() ? REGULAR_SHIPPING_FEE : 0; }
+
+// ★★★ UPDATED SHIPPING LOGIC ★★★
+function getShippingFee() {
+  const hasRegular = state.cart.some(i => i.id !== 5);
+  if (!hasRegular) return 0; // only test product → free shipping
+
+  const subtotal = getSubtotal();
+  // Free shipping if subtotal >= 700, otherwise flat 70 per order
+  return subtotal >= 700 ? 0 : REGULAR_SHIPPING_FEE;
+}
+
 function getSubtotal() { return state.cart.reduce((s, i) => s + i.price * i.quantity, 0); }
 function getTotal() { return getSubtotal() + getShippingFee(); }
 function getCartCount() { return state.cart.reduce((s, i) => s + i.quantity, 0); }
@@ -1369,27 +1414,30 @@ function openPassPopup(mode) {
     if (el.passcodeInput) el.passcodeInput.focus();
   }
 }
-// Replace the checkPasscode function with this fixed version
+
 async function checkPasscode() {
   const input = el.passcodeInput ? el.passcodeInput.value : "";
   
-  // Simple hardcoded passcode check (same as before)
   if (input === "1976") {
     el.passcodePopup.style.display = "none";
     
     if (unlockMode === "admin") {
-      // Admin mode: show panel (session only)
       state.adminVisible = true;
-      el.adminPanel.classList.add("visible");
-      renderOrders();
-      toast("Admin unlocked 🔓 (session only)", "success");
+      const success = await fetchOrdersFromBackend(input);
+      if (success) {
+        el.adminPanel.classList.add("visible");
+        renderOrders();
+        toast("Admin unlocked 🔓", "success");
+      } else {
+        state.adminVisible = false;
+        toast("Failed to load orders", "error");
+      }
     } 
     else if (unlockMode === "test") {
-      // Test mode: show hidden test product
       state.testUnlocked = true;
-      renderMenu();  // Re-render menu to show test item
+      renderMenu();
       if (el.menuHint) el.menuHint.textContent = "✓ Test Mode active – ₹1 test product visible (free shipping).";
-      toast("Test Mode unlocked 🧪 (session only)", "success");
+      toast("Test Mode unlocked 🧪", "success");
     }
   } else {
     if (el.passError) el.passError.innerText = "Wrong passcode";
@@ -1495,13 +1543,13 @@ function renderOrders() {
     o.name.toLowerCase().includes(search) ||
     o.phone.includes(search)
   );
-  if (filter === "pending") filtered = filtered.filter(o => !o.completed);
-  else if (filter === "completed") filtered = filtered.filter(o => o.completed);
-  const sorted = [...filtered].sort((a, b) => b.timestamp - a.timestamp);
+  if (filter === "pending") filtered = filtered.filter(o => o.status !== 'completed');
+  else if (filter === "completed") filtered = filtered.filter(o => o.status === 'completed');
+  const sorted = [...filtered].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
   const total = state.orders.length;
-  const revenue = state.orders.reduce((s, o) => s + o.total, 0);
-  const pending = state.orders.filter(o => !o.completed).length;
+  const revenue = state.orders.reduce((s, o) => s + (o.total || 0), 0);
+  const pending = state.orders.filter(o => o.status !== 'completed').length;
   if (el.statTotalOrders) el.statTotalOrders.textContent = total;
   if (el.statTotalRevenue) el.statTotalRevenue.textContent = formatCurrency(revenue);
   if (el.statPendingOrders) el.statPendingOrders.textContent = pending;
@@ -1515,7 +1563,7 @@ function renderOrders() {
     <div class="order-card ${order.expanded ? 'expanded' : ''}" data-order-id="${order.orderId}">
       <div class="order-header">
         <span class="order-id">${order.orderId}</span>
-        <span class="order-status ${order.completed ? 'completed' : ''}">${order.completed ? '✓ Done' : '● Pending'}</span>
+        <span class="order-status ${order.status === 'completed' ? 'completed' : ''}">${order.status === 'completed' ? '✓ Done' : '● Pending'}</span>
       </div>
       <div class="order-customer">${order.name}</div>
       <div class="order-phone">${order.phone}</div>
@@ -1545,25 +1593,68 @@ function renderOrders() {
       if (e.target.closest('.complete-btn') || e.target.closest('.delete-btn')) return;
       const oid = card.dataset.orderId;
       const order = state.orders.find(o => o.orderId === oid);
-      if (order) { order.expanded = !order.expanded; saveState(STORAGE_KEYS.orders, state.orders); renderOrders(); }
+      if (order) { order.expanded = !order.expanded; renderOrders(); }
     });
   });
   document.querySelectorAll('.complete-btn').forEach(btn => {
-    btn.addEventListener('click', e => {
+    btn.addEventListener('click', async e => {
       e.stopPropagation();
-      const order = state.orders.find(o => o.orderId === btn.dataset.complete);
-      if (order) { order.completed = true; order.expanded = false; saveState(STORAGE_KEYS.orders, state.orders); renderOrders(); toast("Order marked complete", "success"); }
+      await updateOrderStatus(btn.dataset.complete, 'completed');
     });
   });
   document.querySelectorAll('.delete-btn').forEach(btn => {
-    btn.addEventListener('click', e => {
+    btn.addEventListener('click', async e => {
       e.stopPropagation();
-      state.orders = state.orders.filter(o => o.orderId !== btn.dataset.delete);
+      await deleteOrder(btn.dataset.delete);
+    });
+  });
+}
+
+async function updateOrderStatus(orderId, status) {
+  const passcode = el.passcodeInput ? el.passcodeInput.value : "";
+  try {
+    const res = await fetch(BACKEND_URL + "/admin/update-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ passcode, orderId, status })
+    });
+    const data = await res.json();
+    if (data.success) {
+      const order = state.orders.find(o => o.orderId === orderId);
+      if (order) order.status = status;
+      saveState(STORAGE_KEYS.orders, state.orders);
+      renderOrders();
+      toast("Order updated", "success");
+    } else {
+      toast("Failed to update", "error");
+    }
+  } catch (err) {
+    console.error(err);
+    toast("Error updating order", "error");
+  }
+}
+
+async function deleteOrder(orderId) {
+  const passcode = el.passcodeInput ? el.passcodeInput.value : "";
+  try {
+    const res = await fetch(BACKEND_URL + "/admin/delete-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ passcode, orderId })
+    });
+    const data = await res.json();
+    if (data.success) {
+      state.orders = state.orders.filter(o => o.orderId !== orderId);
       saveState(STORAGE_KEYS.orders, state.orders);
       renderOrders();
       toast("Order deleted", "warn");
-    });
-  });
+    } else {
+      toast("Failed to delete", "error");
+    }
+  } catch (err) {
+    console.error(err);
+    toast("Error deleting order", "error");
+  }
 }
 
 // ─── RENDER CHECKOUT SUMMARY ───
@@ -1660,7 +1751,6 @@ function closeConfirmation() {
 function buildOrder(formData, paymentMethod = "Razorpay") {
   const ts = Date.now();
   return {
-    orderId: getOrderReference(ts),
     name: String(formData.get("name") || "").trim(),
     phone: String(formData.get("phone") || "").trim(),
     pincode: String(formData.get("pincode") || "").trim(),
@@ -1668,7 +1758,7 @@ function buildOrder(formData, paymentMethod = "Razorpay") {
     notes: String(formData.get("notes") || "").trim(),
     items: state.cart.map(i => ({ id: i.id, key: i.key, name: i.name, price: i.price, quantity: i.quantity, weightMultiplier: i.weightMultiplier, weightLabel: i.weightLabel })),
     subtotal: getSubtotal(), shipping: getShippingFee(), total: getTotal(),
-    paymentMethod, timestamp: ts, completed: false
+    paymentMethod, timestamp: ts
   };
 }
 function finalizeOrder(order) {
@@ -1692,37 +1782,78 @@ function validateCheckoutForm() {
   if (!/^\d{6}$/.test(pin.value)) { toast("Pincode must be exactly 6 digits", "error"); pin.focus(); return null; }
   return new FormData(el.checkoutForm);
 }
+
 async function startRazorpayPayment() {
   try {
     const total = parseFloat(el.checkoutTotal.textContent.replace("Rs.", ""));
-
-    const res = await fetch("https://iyerval-backend.onrender.com/create-order", {
+    const res = await fetch(BACKEND_URL + "/create-order", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ amount: total })
     });
-
-    const order = await res.json();
+    const data = await res.json();
 
     const options = {
-      key: "rzp_test_SYWrfVzSNTbDes",
-      amount: order.amount,
+      key: RAZORPAY_KEY,
+      amount: data.amount,
       currency: "INR",
-      order_id: order.id,
-
-      handler: function () {
-        alert("Payment successful 🎉");
-      }
+      name: "IYERVAL FOODS",
+      description: "Fresh & Preservative-Free Food Order",
+      order_id: data.id,
+      handler: async function(response) {
+        await verifyAndSaveOrder(response);
+      },
+      prefill: {
+        name: document.getElementById("customerName").value,
+        contact: document.getElementById("customerPhone").value,
+        email: CONTACT_EMAIL
+      },
+      theme: { color: "#FF8C00" }
     };
-
     const rzp = new Razorpay(options);
     rzp.open();
-
   } catch (err) {
     console.error(err);
-    alert("Payment failed ❌");
+    toast("Payment initiation failed. Please try again.", "error");
+    el.rzpStatus.textContent = "Payment initiation failed ❌";
+  }
+}
+
+async function verifyAndSaveOrder(response) {
+  try {
+    const verifyRes = await fetch(BACKEND_URL + "/verify-payment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        razorpay_order_id: response.razorpay_order_id,
+        razorpay_payment_id: response.razorpay_payment_id,
+        razorpay_signature: response.razorpay_signature
+      })
+    });
+    const verifyData = await verifyRes.json();
+
+    if (verifyData.success) {
+      const formData = new FormData(el.checkoutForm);
+      const order = buildOrder(formData, "Razorpay");
+      order.paymentId = response.razorpay_payment_id;
+
+      const saveRes = await fetch(BACKEND_URL + "/save-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(order)
+      });
+      const saveData = await saveRes.json();
+      if (saveData.success) {
+        order.orderId = saveData.orderId;
+        finalizeOrder(order);
+        toast("Payment successful! 🎉", "success");
+      }
+    } else {
+      toast("Payment verification failed", "error");
+    }
+  } catch (err) {
+    console.error(err);
+    toast("Error processing payment", "error");
   }
 }
 
@@ -1733,7 +1864,7 @@ function exportOrdersCSV() {
     o.orderId, o.name, o.phone, o.pincode, o.address, o.notes,
     o.items.map(i => `${i.name} (${i.weightLabel}) x${i.quantity}`).join(" | "),
     o.subtotal, o.shipping, o.total, o.paymentMethod, formatDate(o.timestamp),
-    o.completed ? "Completed" : "Pending"
+    o.status === 'completed' ? "Completed" : "Pending"
   ]));
   const csv = rows.map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -1749,30 +1880,23 @@ function shareWhatsApp() {
   window.open("https://wa.me/?text=" + encodeURIComponent(msg), "_blank");
 }
 function clearCompletedOrders() {
-  const count = state.orders.filter(o => o.completed).length;
-  if (!count) { toast("No completed orders to clear", "info"); return; }
-  state.orders = state.orders.filter(o => !o.completed);
-  saveState(STORAGE_KEYS.orders, state.orders);
-  renderOrders();
-  toast(`${count} completed order${count > 1 ? 's' : ''} cleared`, "success");
+  const completed = state.orders.filter(o => o.status === 'completed');
+  if (!completed.length) { toast("No completed orders to clear", "info"); return; }
+  // Delete each completed order from backend
+  completed.forEach(o => deleteOrder(o.orderId));
 }
 
 // ─── FEEDBACK ───
 async function handleFeedback(e) {
   e.preventDefault();
-
   const email = document.getElementById("feedbackEmail").value;
   const message = document.getElementById("feedbackMessage").value;
-
   try {
-    await fetch("https://iyerval-backend.onrender.com/feedback", {
+    await fetch(BACKEND_URL + "/feedback", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, message })
     });
-
     el.feedbackStatus.textContent = "Feedback sent ✅";
   } catch (err) {
     el.feedbackStatus.textContent = "Error sending feedback ❌";
@@ -1845,7 +1969,13 @@ function bindEvents() {
   el.continueBrowsingBtn.addEventListener("click", closeConfirmation);
 
   // Admin
-  el.refreshOrdersBtn.addEventListener("click", () => { renderOrders(); toast("Orders refreshed", "info", 1500); });
+  el.refreshOrdersBtn.addEventListener("click", () => {
+    const passcode = el.passcodeInput ? el.passcodeInput.value : "";
+    fetchOrdersFromBackend(passcode).then(success => {
+      if (success) toast("Orders refreshed", "info", 1500);
+      else toast("Failed to refresh", "error");
+    });
+  });
   el.exportOrdersBtn.addEventListener("click", exportOrdersCSV);
   el.shareOrdersBtn.addEventListener("click", shareWhatsApp);
   if (el.orderSearchInput) el.orderSearchInput.addEventListener("input", () => renderOrders());
@@ -1927,13 +2057,8 @@ function setupRevealAnimations() {
 
 // ─── INIT ───
 function init() {
-  // Ensure admin mode starts closed on every page load (session only)
   state.adminVisible = false;
   state.testUnlocked = false;
-  // Clear any leftover test mode flag from localStorage (if any)
-  localStorage.removeItem("iyerval-test-mode");
-  
-  // Admin panel is hidden by default
   el.adminPanel.classList.remove("visible");
   
   renderMenu();
