@@ -417,7 +417,8 @@ section { position: relative; padding: 6rem 0; }
   font-size: .82rem; color: var(--muted); pointer-events: none;
 }
 .menu-grid {
-  display: grid; grid-template-columns: repeat(4, minmax(0,1fr));
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
   gap: 1.1rem;
 }
 .menu-card {
@@ -425,34 +426,44 @@ section { position: relative; padding: 6rem 0; }
   border: 1px solid rgba(255,255,255,.06);
   background: rgba(255,255,255,.03);
   box-shadow: 0 12px 40px rgba(0,0,0,.2);
-  transition: all var(--ease);
-  animation: cardIn .5s ease both;      /* ← FIX: removed opacity: 0, changed to both */
+  /* opacity:1 always — animation was hiding cards on mobile */
+  opacity: 1;
+  transition: box-shadow var(--ease), border-color var(--ease), transform var(--ease);
 }
-.menu-card:nth-child(2) { animation-delay: .06s; }
-.menu-card:nth-child(3) { animation-delay: .12s; }
-.menu-card:nth-child(4) { animation-delay: .18s; }
 .menu-card:hover {
-  transform: translateY(-8px);
+  transform: translateY(-6px);
   box-shadow: 0 20px 60px rgba(0,0,0,.35);
   border-color: rgba(255,140,0,.12);
 }
-.menu-card-media { position: relative; aspect-ratio: 1/.88; overflow: hidden; }
+/* Touch devices: no hover lift — prevents cards getting stuck raised on mobile */
+@media (hover: none) {
+  .menu-card:hover { transform: none; box-shadow: 0 12px 40px rgba(0,0,0,.2); border-color: rgba(255,255,255,.06); }
+}
+.menu-card-media {
+  position: relative;
+  width: 100%;
+  /* Fixed height instead of aspect-ratio — aspect-ratio collapses on some iOS/Android browsers */
+  height: 180px;
+  overflow: hidden;
+  background: rgba(255,255,255,.04);
+}
 .menu-card-media img {
   width: 100%; height: 100%; object-fit: cover;
+  display: block;
   transition: transform .8s cubic-bezier(.2,.8,.2,1);
 }
-.menu-card:hover .menu-card-media img { transform: scale(1.08); }
-.menu-card-body { padding: 1.1rem; display: grid; gap: .75rem; }
-.menu-top { display: flex; justify-content: space-between; gap: .6rem; align-items: start; }
-.menu-top h3 { font-size: 1.02rem; line-height: 1.3; font-weight: 700; }
+.menu-card:hover .menu-card-media img { transform: scale(1.06); }
+.menu-card-body { padding: 1rem; display: grid; gap: .65rem; }
+.menu-top { display: flex; justify-content: space-between; gap: .5rem; align-items: start; }
+.menu-top h3 { font-size: .98rem; line-height: 1.3; font-weight: 700; }
 .price {
   color: var(--accent2); font-weight: 800; white-space: nowrap;
-  font-size: .95rem;
+  font-size: .9rem; flex-shrink: 0;
 }
-.menu-card > .menu-card-body > p { font-size: .88rem; }
+.menu-card > .menu-card-body > p { font-size: .85rem; color: var(--muted); line-height: 1.5; }
 .menu-meta {
   display: flex; justify-content: space-between; gap: .5rem;
-  color: rgba(245,242,235,.4); font-size: .78rem;
+  color: rgba(245,242,235,.4); font-size: .75rem;
   text-transform: uppercase; letter-spacing: .1em;
 }
 .weight-row, .field { display: grid; gap: .4rem; }
@@ -461,14 +472,26 @@ section { position: relative; padding: 6rem 0; }
   width: 100%; border-radius: var(--radius-sm);
   border: 1px solid rgba(255,255,255,.1);
   background: rgba(255,255,255,.04); color: var(--text);
-  padding: .85rem 1rem; transition: all var(--ease);
+  /* Reduced vertical padding so cards don't overflow on small screens */
+  padding: .6rem .85rem;
+  transition: all var(--ease);
+  /* font-size 16px prevents iOS auto-zoom on focus */
+  font-size: 16px;
 }
 .weight-row select:focus, .field input:focus, .field textarea:focus {
   outline: none; border-color: rgba(255,140,0,.3);
   box-shadow: 0 0 0 3px rgba(255,140,0,.08);
 }
-.field textarea { min-height: 100px; resize: vertical; }
-.menu-card button { width: 100%; padding: .85rem 1rem; border-radius: var(--radius-sm); font-size: .88rem; }
+.field textarea { min-height: 100px; resize: vertical; font-size: .9rem; }
+/* Prevent iOS auto-zoom on checkout form inputs */
+.field input, .field textarea, .field select {
+  font-size: 16px;
+}
+.menu-card button {
+  width: 100%; padding: .75rem 1rem;
+  border-radius: var(--radius-sm); font-size: .88rem;
+  min-height: 44px; /* Apple HIG tap target minimum */
+}
 .empty-state {
   padding: 3rem 2rem; border-radius: var(--radius-md);
   text-align: center; grid-column: 1 / -1;
@@ -788,7 +811,7 @@ section { position: relative; padding: 6rem 0; }
 @keyframes loadPulse { 0%,100% { box-shadow: 0 0 40px rgba(255,140,0,.2); } 50% { box-shadow: 0 0 60px rgba(255,140,0,.35); } }
 @keyframes loadBar { 0% { width: 0; } 60% { width: 80%; } 100% { width: 100%; } }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(32px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes cardIn { from { opacity: 0; transform: translateY(20px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+/* cardIn animation removed — menu cards are always visible (was causing mobile invisibility bug) */
 @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
 @keyframes toastIn { from { opacity: 0; transform: translateX(40px) scale(.95); } to { opacity: 1; transform: translateX(0) scale(1); } }
@@ -815,6 +838,7 @@ section { position: relative; padding: 6rem 0; }
   .menu-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .checkout-layout, .hero-grid, .about-grid, .contact-grid { grid-template-columns: 1fr; }
   .hero-card { justify-self: start; }
+  .menu-card-media { height: 160px; }
 }
 @media (max-width: 820px) {
   :root { --wrap: min(100vw - 1.2rem, 1200px); }
@@ -833,6 +857,9 @@ section { position: relative; padding: 6rem 0; }
   .nav-links a { padding: .75rem 1rem; border-radius: 12px; }
   .hamburger { display: inline-grid; place-items: center; }
   .support-strip, .about-stats { grid-template-columns: 1fr; }
+  /* 2-column menu grid for tablets */
+  .menu-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: .85rem; }
+  .menu-card-media { height: 150px; }
 }
 @media (max-width: 640px) {
   .navbar { padding-bottom: .3rem; }
@@ -844,7 +871,11 @@ section { position: relative; padding: 6rem 0; }
   .nav-actions { width: 100%; justify-content: center; flex-wrap: wrap; }
   section { padding: 4rem 0; }
   .hero-grid { padding: 3rem 0 2.5rem; }
-  .menu-grid, .contact-grid { grid-template-columns: 1fr; }
+  /* Single column on phones */
+  .menu-grid { grid-template-columns: 1fr; gap: .75rem; }
+  .contact-grid { grid-template-columns: 1fr; }
+  .menu-card-media { height: 200px; }
+  .menu-card-body { padding: .85rem; gap: .6rem; }
   .toolbar, .hero-actions, .admin-actions, .footer-inner {
     flex-direction: column; align-items: stretch;
   }
@@ -854,6 +885,16 @@ section { position: relative; padding: 6rem 0; }
   .modal-card { padding: 1rem; }
   .cart-panel { border-radius: var(--radius-md) 0 0 var(--radius-md); }
   .toast-container { left: .75rem; right: .75rem; max-width: none; }
+  /* Checkout layout stacks properly on phone */
+  .checkout-layout { gap: .85rem; }
+  .summary-card, .payment-card { padding: 1rem; }
+}
+@media (max-width: 380px) {
+  /* Very small phones — compact everything further */
+  .menu-grid { gap: .6rem; }
+  .menu-card-media { height: 170px; }
+  .menu-card-body { padding: .75rem; }
+  .menu-top h3 { font-size: .9rem; }
 }
 </style>
 </head>
@@ -1230,21 +1271,19 @@ section { position: relative; padding: 6rem 0; }
    ═══════════════════════════════════════════ */
 
 // Backend URL (change to your Render URL after deployment)
-const BACKEND_URL = window.location.origin; // Uses same domain when served by backend
+const BACKEND_URL = window.location.origin;
 
 // Config variables (fetched from backend)
-let RAZORPAY_KEY = "rzp_test_SYWrfVzSNTbDes"; // fallback
+let RAZORPAY_KEY = "rzp_test_SYWrfVzSNTbDes";
 let CONTACT_EMAIL = "iyervalfoods@gmail.com";
 let REGULAR_SHIPPING_FEE = 70;
 
-// Fetch config from backend
 fetch(BACKEND_URL + "/config")
   .then(res => res.json())
   .then(data => {
     if (data.razorpayKey) RAZORPAY_KEY = data.razorpayKey;
     if (data.shippingFee) REGULAR_SHIPPING_FEE = parseInt(data.shippingFee);
     if (data.contactEmail) CONTACT_EMAIL = data.contactEmail;
-    // Update shipping note
     document.getElementById('shippingNote').textContent = `🚚 ₹${REGULAR_SHIPPING_FEE} shipping per order — FREE on orders ₹700+`;
   })
   .catch(err => console.log("Config fetch failed, using defaults"));
@@ -1261,14 +1300,9 @@ const WEIGHT_OPTIONS = [
   { label: "1kg (×10)", multiplier: 10 }
 ];
 
-// ─── UPDATED MENU ITEMS ───
 const menuItems = [
-  // Existing, renamed Thair Mulagai (was Curd Chilli)
   { id: 1, name: "Thair Mulagai", category: "Snacks", basePrice: 120, description: "Curd-soaked sun-dried chillies, a spicy treat.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@main/images/1.jpg" },
-  // Existing Avakaya Mango Pickle – price updated
   { id: 3, name: "Avakaya Mango Pickle", category: "Meals", basePrice: 60, description: "Andhra-style mango pickle with aromatic spices – no vinegar, no preservatives.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@main/images/5.jpg" },
-  
-  // New items
   { id: 6, name: "Karuvadam", category: "Snacks", basePrice: 35, description: "Traditional sun-dried karuvadam, crispy and light.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@bc523026b580d0b017a8a22816939d60ccdc6e87/assets/1100x1100.jpeg" },
   { id: 7, name: "Onion Karuvadam", category: "Snacks", basePrice: 40, description: "Crunchy onion-flavoured karuvadam.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@bc523026b580d0b017a8a22816939d60ccdc6e87/assets/Onion_1.webp" },
   { id: 8, name: "Vazhathandu Karuvadam", category: "Snacks", basePrice: 42.5, description: "Delicious banana stem karuvadam.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@bc523026b580d0b017a8a22816939d60ccdc6e87/assets/kaipunnyam-unnithandu.webp" },
@@ -1278,12 +1312,10 @@ const menuItems = [
   { id: 12, name: "Chundakkai Vathal", category: "Snacks", basePrice: 100, description: "Turkey berry vathal, a traditional delicacy.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@bc523026b580d0b017a8a22816939d60ccdc6e87/assets/Sundakkai-vathal.jpg" },
   { id: 13, name: "Arisi Vadam", category: "Snacks", basePrice: 50, description: "Rice vadam, light and perfect for frying. (10 nos)", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@bc523026b580d0b017a8a22816939d60ccdc6e87/assets/Rice-Vadam-%E2%80%93-Jeera.jpg" },
   { id: 14, name: "Poola Pappadam", category: "Snacks", basePrice: 50, description: "Tapioca rice pappadam, crisp and airy. (10 nos)", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@bc523026b580d0b017a8a22816939d60ccdc6e87/assets/TappiacoRicePappadam.webp" },
-  
   // Test product (hidden)
-  { id: 5, name: "Test Product (Rs.1)", category: "Drinks", basePrice: 1, description: "Hidden test item to verify the ordering flow. Free shipping.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@main/assets/1.png", hidden: true }
+  { id: 5, name: "Test Product (Rs.1)", category: "Drinks", basePrice: 1, description: "Hidden test item. Free shipping.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@main/assets/1.png", hidden: true }
 ];
 
-// ─── STATE ───
 const state = {
   selectedFilter: "All",
   searchQuery: "",
@@ -1293,7 +1325,6 @@ const state = {
   testUnlocked: false
 };
 
-// Load orders from backend when admin logs in
 async function fetchOrdersFromBackend(passcode) {
   try {
     const res = await fetch(BACKEND_URL + "/admin/orders", {
@@ -1307,16 +1338,14 @@ async function fetchOrdersFromBackend(passcode) {
       saveState(STORAGE_KEYS.orders, state.orders);
       renderOrders();
       return true;
-    } else {
-      return false;
     }
+    return false;
   } catch (err) {
     console.error(err);
     return false;
   }
 }
 
-// ─── DOM REFS ───
 const el = {};
 const ids = [
   'loadingScreen','navLinks','hamburgerBtn','adminToggleBtn','testModeBtn',
@@ -1333,7 +1362,6 @@ const ids = [
 ];
 ids.forEach(id => el[id] = document.getElementById(id));
 
-// ─── UTILS ───
 function loadState(key, fallback) {
   try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }
   catch { return fallback; }
@@ -1341,9 +1369,7 @@ function loadState(key, fallback) {
 function saveState(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
 function formatCurrency(value) { return "Rs." + Number(value).toFixed(2); }
 function formatDate(ts) { return new Date(ts).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }); }
-function visibleMenu() {
-  return menuItems.filter(i => !i.hidden || state.testUnlocked);
-}
+function visibleMenu() { return menuItems.filter(i => !i.hidden || state.testUnlocked); }
 function getWeightLabel(m) { const match = WEIGHT_OPTIONS.find(o => o.multiplier === Number(m)); return match ? match.label.split(" ")[0] : "100g"; }
 function getCompositeKey(id, w) { return id + "_" + w; }
 function calculateItemPrice(item, w) {
@@ -1353,7 +1379,6 @@ function calculateItemPrice(item, w) {
 }
 function hasRegularItems() { return state.cart.some(i => i.id !== 5); }
 
-// ★ Updated shipping logic: flat ₹70, free over ₹700
 function getShippingFee() {
   const hasRegular = state.cart.some(i => i.id !== 5);
   if (!hasRegular) return 0;
@@ -1364,18 +1389,12 @@ function getShippingFee() {
 function getSubtotal() { return state.cart.reduce((s, i) => s + i.price * i.quantity, 0); }
 function getTotal() { return getSubtotal() + getShippingFee(); }
 function getCartCount() { return state.cart.reduce((s, i) => s + i.quantity, 0); }
-function getOrderReference(ts = Date.now()) { return "IYER" + String(ts).slice(-8); }
 
-// ─── TOAST SYSTEM ───
 function toast(message, type = "info", duration = 3500) {
   const icons = { success: "✓", error: "✕", warn: "⚠", info: "ℹ" };
   const t = document.createElement("div");
   t.className = `toast ${type}`;
-  t.innerHTML = `
-    <span class="toast-icon">${icons[type] || icons.info}</span>
-    <span class="toast-text">${message}</span>
-    <button class="toast-close" type="button">✕</button>
-  `;
+  t.innerHTML = `<span class="toast-icon">${icons[type] || icons.info}</span><span class="toast-text">${message}</span><button class="toast-close" type="button">✕</button>`;
   el.toastContainer.appendChild(t);
   t.querySelector(".toast-close").addEventListener("click", () => removeToast(t));
   setTimeout(() => removeToast(t), duration);
@@ -1386,7 +1405,6 @@ function removeToast(t) {
   setTimeout(() => t.remove(), 300);
 }
 
-// ─── CONFETTI ───
 function spawnConfetti(count = 40) {
   const colors = ['#ff8c00', '#ffbf69', '#34d399', '#60a5fa', '#f472b6', '#fbbf24'];
   for (let i = 0; i < count; i++) {
@@ -1404,7 +1422,6 @@ function spawnConfetti(count = 40) {
   }
 }
 
-// ─── PASSCODE LOGIC (session only) ───
 let unlockMode = null;
 function openPassPopup(mode) {
   unlockMode = mode;
@@ -1418,10 +1435,8 @@ function openPassPopup(mode) {
 
 async function checkPasscode() {
   const input = el.passcodeInput ? el.passcodeInput.value : "";
-  
   if (input === "1976") {
     el.passcodePopup.style.display = "none";
-    
     if (unlockMode === "admin") {
       state.adminVisible = true;
       const success = await fetchOrdersFromBackend(input);
@@ -1433,8 +1448,7 @@ async function checkPasscode() {
         state.adminVisible = false;
         toast("Failed to load orders", "error");
       }
-    } 
-    else if (unlockMode === "test") {
+    } else if (unlockMode === "test") {
       state.testUnlocked = true;
       renderMenu();
       if (el.menuHint) el.menuHint.textContent = "✓ Test Mode active – ₹1 test product visible (free shipping).";
@@ -1446,7 +1460,6 @@ async function checkPasscode() {
   }
 }
 
-// ─── RENDER MENU ───
 function renderMenu() {
   const items = visibleMenu().filter(item => {
     const matchFilter = state.selectedFilter === "All" || item.category === state.selectedFilter;
@@ -1457,8 +1470,8 @@ function renderMenu() {
     el.menuGrid.innerHTML = `<div class="empty-state glass"><div class="empty-state-icon">🍃</div><strong style="display:block;margin-bottom:.5rem;">No items found</strong><p>Try a different category or search term.</p></div>`;
     return;
   }
-  el.menuGrid.innerHTML = items.map((item, idx) => `
-    <article class="menu-card" style="animation-delay:${idx * .06}s">
+  el.menuGrid.innerHTML = items.map((item) => `
+    <article class="menu-card">
       <div class="menu-card-media">
         <img src="${item.image}" alt="${item.name}" loading="lazy" />
       </div>
@@ -1484,7 +1497,6 @@ function renderMenu() {
   `).join("");
 }
 
-// ─── RENDER CART ───
 function renderCart() {
   const count = getCartCount();
   const subtotal = getSubtotal();
@@ -1534,7 +1546,6 @@ function renderCart() {
   `).join("");
 }
 
-// ─── RENDER ORDERS ───
 function renderOrders() {
   const search = el.orderSearchInput ? el.orderSearchInput.value.toLowerCase() : "";
   const filter = el.orderFilterStatus ? el.orderFilterStatus.value : "all";
@@ -1657,7 +1668,6 @@ async function deleteOrder(orderId) {
   }
 }
 
-// ─── RENDER CHECKOUT SUMMARY ───
 function renderCheckoutSummary() {
   if (!state.cart.length) {
     el.checkoutSummaryList.innerHTML = `<li><span>Cart empty</span><span>${formatCurrency(0)}</span></li>`;
@@ -1675,7 +1685,6 @@ function renderCheckoutSummary() {
   el.checkoutTotal.textContent = formatCurrency(sub + ship);
 }
 
-// ─── CART OPERATIONS ───
 function addToCart(itemId, weightMultiplier) {
   const item = visibleMenu().find(e => e.id === Number(itemId));
   if (!item) return;
@@ -1706,7 +1715,6 @@ function bumpCartCount() {
   el.navCartCount.classList.add('bump');
 }
 
-// ─── PANEL CONTROLS ───
 function openCart() { el.cartPanel.classList.add("open"); el.backdrop.classList.add("visible"); document.body.classList.add("cart-open"); }
 function closeCart() {
   el.cartPanel.classList.remove("open");
@@ -1747,7 +1755,6 @@ function closeConfirmation() {
   }
 }
 
-// ─── ORDER FLOW ───
 function buildOrder(formData, paymentMethod = "Razorpay") {
   const ts = Date.now();
   return {
@@ -1783,96 +1790,186 @@ function validateCheckoutForm() {
   return new FormData(el.checkoutForm);
 }
 
+// ╔══════════════════════════════════════════════════════╗
+// ║           RAZORPAY BLOCK – FULLY REBUILT             ║
+// ╚══════════════════════════════════════════════════════╝
+
+/*
+  AMOUNT FLOW (read before touching this block):
+  ──────────────────────────────────────────────
+  1. getTotal()         → rupees  (e.g. 270.00)
+  2. Sent to /create-order as { amount: 270.00 }  (rupees)
+  3. Backend does Math.round(270.00 * 100) = 27000 paise → Razorpay
+  4. Razorpay order.amount comes back as 27000 (paise)
+  5. We pass data.amount (27000 paise) directly to Razorpay checkout options
+     ← DO NOT multiply by 100 again here; it's already paise
+  6. Razorpay checkout shows ₹270 correctly ✅
+*/
+
 async function startRazorpayPayment() {
-  // ★ STOP if the form is not valid (name, phone, pincode, address)
+  // Step 1 – validate form fields
   const formData = validateCheckoutForm();
   if (!formData) return;
 
-  // ★ BLOCK payment if cart contains ONLY the test product
+  // Step 2 – block test-only cart
   const hasOnlyTest = state.cart.length === 1 && state.cart[0].id === 5;
   if (hasOnlyTest) {
     toast("Cannot place order with only Test Product. Add real items.", "error", 3000);
     return;
   }
 
-  // ★ BLOCK if any regular item is present but the total somehow is ₹1 (safety)
-  if (hasRegularItems() && parseFloat(el.checkoutTotal.textContent.replace("Rs.", "")) <= 1) {
-    toast("Invalid total. Please check your cart.", "error");
+  // Step 3 – get the exact rupee total directly from state (not from DOM text)
+  //          getTotal() returns a clean JS number like 270 — no parsing needed
+  const totalRupees = getTotal();
+  if (!totalRupees || totalRupees < 1) {
+    toast("Order total is too low to process.", "error");
     return;
   }
 
-  try {
-    const total = parseFloat(el.checkoutTotal.textContent.replace("Rs.", ""));
-    const res = await fetch(BACKEND_URL + "/create-order", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount: total })
-    });
-    const data = await res.json();
+  // Step 4 – show loading state on button
+  el.rzpPayBtn.disabled = true;
+  el.rzpPayBtn.textContent = "⏳ Initialising...";
+  el.rzpStatus.textContent = "";
+  el.rzpStatus.className = "status-message";
 
+  try {
+    // Step 5 – ask backend to create a Razorpay order
+    //          send amount in RUPEES; backend converts to paise
+    const createRes = await fetch(BACKEND_URL + "/create-order", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ amount: totalRupees })
+    });
+
+    if (!createRes.ok) {
+      const errData = await createRes.json().catch(() => ({}));
+      throw new Error(errData.error || "Server error creating order");
+    }
+
+    const rzpOrder = await createRes.json();
+    // rzpOrder.amount is in PAISE (e.g. 27000); pass as-is below
+
+    // Step 6 – open Razorpay checkout
     const options = {
-      key: RAZORPAY_KEY,
-      amount: data.amount,
-      currency: "INR",
-      name: "IYERVAL FOODS",
+      key:         RAZORPAY_KEY,
+      amount:      rzpOrder.amount,   // paise – already correct, DO NOT multiply again
+      currency:    rzpOrder.currency || "INR",
+      name:        "IYERVAL FOODS",
       description: "Fresh & Preservative-Free Food Order",
-      order_id: data.id,
-      handler: async function(response) {
-        await verifyAndSaveOrder(response);
-      },
+      order_id:    rzpOrder.id,       // Razorpay order ID (string starting with "order_")
       prefill: {
-        name: document.getElementById("customerName").value,
-        contact: document.getElementById("customerPhone").value,
-        email: CONTACT_EMAIL
+        name:    document.getElementById("customerName").value.trim(),
+        contact: document.getElementById("customerPhone").value.trim(),
+        email:   CONTACT_EMAIL
       },
-      theme: { color: "#FF8C00" }
+      theme: { color: "#FF8C00" },
+      modal: {
+        ondismiss: function () {
+          // User closed the Razorpay popup without paying
+          el.rzpPayBtn.disabled = false;
+          el.rzpPayBtn.textContent = "💳 Pay with Razorpay";
+          el.rzpStatus.textContent = "Payment cancelled.";
+          el.rzpStatus.className = "status-message warn";
+        }
+      },
+      handler: async function (response) {
+        // Called by Razorpay ONLY after a successful payment
+        // response = { razorpay_order_id, razorpay_payment_id, razorpay_signature }
+        await verifyAndSaveOrder(response);
+      }
     };
+
     const rzp = new Razorpay(options);
+
+    // Handle payment failure inside the Razorpay popup
+    rzp.on("payment.failed", function (response) {
+      console.error("Razorpay payment failed:", response.error);
+      el.rzpPayBtn.disabled = false;
+      el.rzpPayBtn.textContent = "💳 Pay with Razorpay";
+      el.rzpStatus.textContent = "Payment failed: " + (response.error.description || "Please try again.");
+      el.rzpStatus.className = "status-message error";
+      toast("Payment failed. Please try again.", "error");
+    });
+
     rzp.open();
+
   } catch (err) {
-    console.error(err);
+    console.error("startRazorpayPayment error:", err);
+    el.rzpPayBtn.disabled = false;
+    el.rzpPayBtn.textContent = "💳 Pay with Razorpay";
+    el.rzpStatus.textContent = "Could not start payment. Please try again.";
+    el.rzpStatus.className = "status-message error";
     toast("Payment initiation failed. Please try again.", "error");
-    el.rzpStatus.textContent = "Payment initiation failed ❌";
   }
 }
 
 async function verifyAndSaveOrder(response) {
+  // Show verifying state
+  el.rzpPayBtn.textContent = "⏳ Verifying...";
+  el.rzpStatus.textContent = "Verifying payment...";
+  el.rzpStatus.className = "status-message";
+
   try {
+    // Step 1 – verify signature on backend
     const verifyRes = await fetch(BACKEND_URL + "/verify-payment", {
-      method: "POST",
+      method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        razorpay_order_id: response.razorpay_order_id,
+      body:    JSON.stringify({
+        razorpay_order_id:  response.razorpay_order_id,
         razorpay_payment_id: response.razorpay_payment_id,
-        razorpay_signature: response.razorpay_signature
+        razorpay_signature:  response.razorpay_signature
       })
     });
+
     const verifyData = await verifyRes.json();
 
-    if (verifyData.success) {
-      const formData = new FormData(el.checkoutForm);
-      const order = buildOrder(formData, "Razorpay");
-      order.paymentId = response.razorpay_payment_id;
-
-      const saveRes = await fetch(BACKEND_URL + "/save-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(order)
-      });
-      const saveData = await saveRes.json();
-      if (saveData.success) {
-        order.orderId = saveData.orderId;
-        finalizeOrder(order);
-        toast("Payment successful! 🎉", "success");
-      }
-    } else {
-      toast("Payment verification failed", "error");
+    if (!verifyData.success) {
+      el.rzpPayBtn.disabled = false;
+      el.rzpPayBtn.textContent = "💳 Pay with Razorpay";
+      el.rzpStatus.textContent = "Payment verification failed. Contact support.";
+      el.rzpStatus.className = "status-message error";
+      toast("Payment verification failed.", "error");
+      return;
     }
+
+    // Step 2 – signature verified; build and save the order
+    const formData = new FormData(el.checkoutForm);
+    const order    = buildOrder(formData, "Razorpay");
+    order.paymentId       = response.razorpay_payment_id;
+    order.razorpayOrderId = response.razorpay_order_id;
+
+    const saveRes = await fetch(BACKEND_URL + "/save-order", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(order)
+    });
+
+    const saveData = await saveRes.json();
+
+    if (saveData.success) {
+      order.orderId = saveData.orderId;
+      // Reset button before finalizing (finalizeOrder clears the form/cart)
+      el.rzpPayBtn.disabled = false;
+      el.rzpPayBtn.textContent = "💳 Pay with Razorpay";
+      el.rzpStatus.textContent = "";
+      el.rzpStatus.className = "status-message";
+      finalizeOrder(order);
+      toast("Payment successful! 🎉", "success", 4000);
+    } else {
+      throw new Error("Order save failed");
+    }
+
   } catch (err) {
-    console.error(err);
-    toast("Error processing payment", "error");
+    console.error("verifyAndSaveOrder error:", err);
+    el.rzpPayBtn.disabled = false;
+    el.rzpPayBtn.textContent = "💳 Pay with Razorpay";
+    el.rzpStatus.textContent = "Error saving order. Contact support with your payment ID.";
+    el.rzpStatus.className = "status-message error";
+    toast("Error processing order. Please contact support.", "error");
   }
 }
+
+// ╚══════════════════════════════════════════════════════╝
 
 function exportOrdersCSV() {
   if (!state.orders.length) { toast("No orders to export", "warn"); return; }
@@ -1899,11 +1996,9 @@ function shareWhatsApp() {
 function clearCompletedOrders() {
   const completed = state.orders.filter(o => o.status === 'completed');
   if (!completed.length) { toast("No completed orders to clear", "info"); return; }
-  // Delete each completed order from backend
   completed.forEach(o => deleteOrder(o.orderId));
 }
 
-// ─── FEEDBACK ───
 async function handleFeedback(e) {
   e.preventDefault();
   const email = document.getElementById("feedbackEmail").value;
@@ -1920,7 +2015,6 @@ async function handleFeedback(e) {
   }
 }
 
-// ─── ACTIVE NAV HIGHLIGHT ───
 function updateActiveNav() {
   const sections = ['home', 'menu', 'about', 'contact'];
   const scrollY = window.scrollY + 120;
@@ -1934,16 +2028,12 @@ function updateActiveNav() {
   });
 }
 
-// ─── EVENT BINDING ───
 function bindEvents() {
-
-  // Menu search
   el.menuSearchInput.addEventListener("input", e => {
     state.searchQuery = e.target.value.toLowerCase().trim();
     renderMenu();
   });
 
-  // Weight change → price update
   el.menuGrid.addEventListener("change", e => {
     const sel = e.target.closest("[data-weight-select]");
     if (!sel) return;
@@ -1952,7 +2042,6 @@ function bindEvents() {
     if (item && display) display.textContent = formatCurrency(calculateItemPrice(item, sel.value));
   });
 
-  // Add to cart
   el.menuGrid.addEventListener("click", e => {
     const btn = e.target.closest("[data-add-to-cart]");
     if (!btn) return;
@@ -1961,7 +2050,6 @@ function bindEvents() {
     addToCart(id, sel ? sel.value : 1);
   });
 
-  // Cart item actions
   el.cartItemsContainer.addEventListener("click", e => {
     const q = e.target.closest("[data-qty-key]");
     const r = e.target.closest("[data-remove-key]");
@@ -1969,7 +2057,6 @@ function bindEvents() {
     if (r) removeCartItem(r.dataset.removeKey);
   });
 
-  // Cart open/close
   [el.cartFab, el.navCartBtn].forEach(b => b.addEventListener("click", openCart));
   el.closeCartBtn.addEventListener("click", closeCart);
   el.checkoutBtn.addEventListener("click", openCheckout);
@@ -1977,7 +2064,6 @@ function bindEvents() {
   el.closeConfirmationBtn.addEventListener("click", closeConfirmation);
   el.continueBrowsingBtn.addEventListener("click", closeConfirmation);
 
-  // Admin
   el.refreshOrdersBtn.addEventListener("click", () => {
     const passcode = el.passcodeInput ? el.passcodeInput.value : "";
     fetchOrdersFromBackend(passcode).then(success => {
@@ -1991,15 +2077,12 @@ function bindEvents() {
   if (el.orderFilterStatus) el.orderFilterStatus.addEventListener("change", () => renderOrders());
   if (el.clearCompletedBtn) el.clearCompletedBtn.addEventListener("click", clearCompletedOrders);
 
-  // Feedback & checkout
   el.feedbackForm.addEventListener("submit", handleFeedback);
   el.checkoutForm.addEventListener("submit", e => e.preventDefault());
   el.rzpPayBtn.addEventListener("click", startRazorpayPayment);
 
-  // Backdrop close all
   el.backdrop.addEventListener("click", () => { closeCart(); closeCheckout(); closeConfirmation(); });
 
-  // Hamburger
   el.hamburgerBtn.addEventListener("click", () => {
     const open = !el.navLinks.classList.contains("open");
     el.navLinks.classList.toggle("open", open);
@@ -2016,7 +2099,6 @@ function bindEvents() {
     }
   });
 
-  // Scroll links
   document.querySelectorAll("[data-scroll]").forEach(btn =>
     btn.addEventListener("click", () => {
       const target = document.querySelector(btn.dataset.scroll);
@@ -2024,10 +2106,8 @@ function bindEvents() {
     })
   );
 
-  // Scroll to top
   el.scrollTopBtn.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
 
-  // Scroll events
   let ticking = false;
   window.addEventListener("scroll", () => {
     if (!ticking) {
@@ -2042,19 +2122,16 @@ function bindEvents() {
     }
   });
 
-  // ESC key
   document.addEventListener("keydown", e => {
     if (e.key === "Escape") { closeCart(); closeCheckout(); closeConfirmation(); }
   });
 
-  // Admin / Test buttons
   el.adminToggleBtn.addEventListener("click", () => openPassPopup("admin"));
   el.testModeBtn.addEventListener("click", () => openPassPopup("test"));
   if (el.passcodeSubmitBtn) el.passcodeSubmitBtn.addEventListener("click", checkPasscode);
   if (el.passcodeInput) el.passcodeInput.addEventListener("keypress", (e) => { if (e.key === "Enter") checkPasscode(); });
 }
 
-// ─── REVEAL OBSERVER ───
 function setupRevealAnimations() {
   const observer = new IntersectionObserver(entries => {
     entries.forEach(entry => {
@@ -2064,13 +2141,12 @@ function setupRevealAnimations() {
   document.querySelectorAll(".reveal").forEach(el => observer.observe(el));
 }
 
-// ─── INIT ───
 function init() {
   state.adminVisible = false;
   state.testUnlocked = false;
   el.adminPanel.classList.remove("visible");
 
-  // Remove test product from cart if test mode is off
+  // ★ Remove test product from cart if test mode is off
   if (!state.testUnlocked) {
     state.cart = state.cart.filter(item => item.id !== 5);
     saveState(STORAGE_KEYS.cart, state.cart);
