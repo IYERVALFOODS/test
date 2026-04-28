@@ -953,7 +953,7 @@ section { position: relative; padding: 6rem 0; }
 <!-- CART FAB -->
 <button class="cart-fab glass" id="cartFab" type="button" aria-label="Open cart">
   <strong>🛒 Cart</strong>
-  <span class="highlight" id="fabCartLabel">0 items · Rs.0</span>
+  <span class="highlight" id="fabCartLabel">0 items · ₹0</span>
 </button>
 
 <main>
@@ -1115,7 +1115,7 @@ section { position: relative; padding: 6rem 0; }
           <div class="stat-label">Total Orders</div>
         </div>
         <div class="stat-card">
-          <div class="stat-number" id="statTotalRevenue">Rs.0</div>
+          <div class="stat-number" id="statTotalRevenue">₹0</div>
           <div class="stat-label">Revenue</div>
         </div>
         <div class="stat-card">
@@ -1142,7 +1142,7 @@ section { position: relative; padding: 6rem 0; }
 
 <footer class="footer">
   <div class="container footer-inner">
-    <span>© 2025 IYERVAL FOODS – Pure. Fresh. Preservative‑free.</span>
+    <span>© 2026 IYERVAL FOODS – Pure. Fresh. Preservative‑free.</span>
     <span>Handcrafted with ♥ in Palakkad, Kerala</span>
   </div>
   <div style="text-align:center;font-size:0.6rem;color:var(--muted);margin-top:0.5rem;">
@@ -1170,15 +1170,15 @@ section { position: relative; padding: 6rem 0; }
   <div class="cart-footer">
     <div class="summary-row">
       <span>Subtotal</span>
-      <strong id="cartSubtotal">Rs.0.00</strong>
+      <strong id="cartSubtotal">₹0.00</strong>
     </div>
     <div class="summary-row">
       <span>Shipping</span>
-      <strong id="cartShipping">Rs.0.00</strong>
+      <strong id="cartShipping">₹0.00</strong>
     </div>
     <div class="cart-total">
       <span style="font-weight:700;">Total</span>
-      <strong class="highlight" id="cartTotal" style="font-size:1.1rem;">Rs.0.00</strong>
+      <strong class="highlight" id="cartTotal" style="font-size:1.1rem;">₹0.00</strong>
     </div>
     <p class="cart-note" id="shippingNote">🚚 ₹70 shipping per order — FREE on orders ₹700+</p>
     <button class="checkout-open-btn" id="checkoutBtn" type="button">Proceed to Checkout →</button>
@@ -1223,9 +1223,9 @@ section { position: relative; padding: 6rem 0; }
         <div class="summary-card glass">
           <strong>Order Summary</strong>
           <ul class="summary-list" id="checkoutSummaryList"></ul>
-          <div class="summary-row"><span>Subtotal</span><span id="checkoutSubtotal">Rs.0.00</span></div>
-          <div class="summary-row"><span>Shipping</span><span id="checkoutShipping">Rs.0.00</span></div>
-          <div class="summary-row summary-foot"><span>Total</span><span id="checkoutTotal">Rs.0.00</span></div>
+          <div class="summary-row"><span>Subtotal</span><span id="checkoutSubtotal">₹0.00</span></div>
+          <div class="summary-row"><span>Shipping</span><span id="checkoutShipping">₹0.00</span></div>
+          <div class="summary-row summary-foot"><span>Total</span><span id="checkoutTotal">₹0.00</span></div>
         </div>
         <div class="payment-card glass">
           <strong>Payment</strong>
@@ -1274,19 +1274,26 @@ section { position: relative; padding: 6rem 0; }
 const BACKEND_URL = window.location.origin;
 
 // Config variables (fetched from backend)
-let RAZORPAY_KEY = "rzp_test_SYWrfVzSNTbDes";
+let RAZORPAY_KEY = "rzp_test_SinU0vkA06TpMp";
 let CONTACT_EMAIL = "iyervalfoods@gmail.com";
 let REGULAR_SHIPPING_FEE = 70;
 
+// Config is fetched in the background — menu renders immediately with defaults.
+// This prevents a blank menu on Render cold start (server sleeps after 15min inactivity).
 fetch(BACKEND_URL + "/config")
-  .then(res => res.json())
+  .then(res => { if (!res.ok) throw new Error("config " + res.status); return res.json(); })
   .then(data => {
-    if (data.razorpayKey) RAZORPAY_KEY = data.razorpayKey;
-    if (data.shippingFee) REGULAR_SHIPPING_FEE = parseInt(data.shippingFee);
-    if (data.contactEmail) CONTACT_EMAIL = data.contactEmail;
-    document.getElementById('shippingNote').textContent = `🚚 ₹${REGULAR_SHIPPING_FEE} shipping per order — FREE on orders ₹700+`;
+    if (data.razorpayKey)  RAZORPAY_KEY          = data.razorpayKey;
+    if (data.shippingFee)  REGULAR_SHIPPING_FEE  = parseInt(data.shippingFee);
+    if (data.contactEmail) CONTACT_EMAIL         = data.contactEmail;
+    // Update shipping note live after config arrives
+    const note = document.getElementById("shippingNote");
+    if (note) note.textContent = `🚚 ₹${REGULAR_SHIPPING_FEE} shipping per order — FREE on orders ₹700+`;
+    // Re-render cart totals with real shipping fee
+    renderCart();
+    renderCheckoutSummary();
   })
-  .catch(err => console.log("Config fetch failed, using defaults"));
+  .catch(() => console.log("Config fetch failed — using built-in defaults"));
 
 const STORAGE_KEYS = {
   cart: "iyerval-cart-v2",
@@ -1367,7 +1374,7 @@ function loadState(key, fallback) {
   catch { return fallback; }
 }
 function saveState(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
-function formatCurrency(value) { return "Rs." + Number(value).toFixed(2); }
+function formatCurrency(value) { return "₹" + Number(value).toFixed(2); }
 function formatDate(ts) { return new Date(ts).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }); }
 function visibleMenu() { return menuItems.filter(i => !i.hidden || state.testUnlocked); }
 function getWeightLabel(m) { const match = WEIGHT_OPTIONS.find(o => o.multiplier === Number(m)); return match ? match.label.split(" ")[0] : "100g"; }
@@ -2158,7 +2165,10 @@ function init() {
   renderCheckoutSummary();
   bindEvents();
   setupRevealAnimations();
-  window.addEventListener("load", () => setTimeout(() => el.loadingScreen.classList.add("hidden"), 800));
+  // Give Render cold-start extra time before hiding loader.
+  // On a warm server this hides after 1.2s; on cold start the menu
+  // will already be rendered (it runs synchronously) so this is just cosmetic.
+  window.addEventListener("load", () => setTimeout(() => el.loadingScreen.classList.add("hidden"), 1200));
 }
 
 init();
