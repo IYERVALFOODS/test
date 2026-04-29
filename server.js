@@ -282,4 +282,4 @@ app.listen(PORT, () => {
   console.log(`Contact: ${CONTACT_EMAIL}`);
   console.log(`Shipping fee: Rs.${REGULAR_SHIPPING_FEE}`);
   console.log(`Razorpay key: ${RAZORPAY_KEY_ID}`);
-}); 
+});
