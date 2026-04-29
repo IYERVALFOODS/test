@@ -8,14 +8,11 @@ const Razorpay = require("razorpay");
 const crypto   = require("crypto");
 
 // ================= ENV VALIDATION =================
-// These MUST be set in Render's environment variables dashboard.
-// If any are missing the server crashes on startup with a clear message
-// rather than silently using wrong values.
 const REQUIRED_ENV = ["RAZORPAY_KEY_ID", "RAZORPAY_SECRET", "ADMIN_PASSCODE"];
 const missing = REQUIRED_ENV.filter(k => !process.env[k]);
 if (missing.length) {
-  console.error("Missing required environment variables:", missing.join(", "));
-  console.error("Set them in Render > Environment > Add Environment Variable");
+  console.error("❌ Missing required environment variables:", missing.join(", "));
+  console.error("Please set them in Render Dashboard > Environment Variables");
   process.exit(1);
 }
 
@@ -27,19 +24,15 @@ const REGULAR_SHIPPING_FEE = parseInt(process.env.REGULAR_SHIPPING_FEE) || 70;
 const CONTACT_EMAIL        = process.env.CONTACT_EMAIL     || "iyervalfoods@gmail.com";
 const FEEDBACK_ENDPOINT    = process.env.FEEDBACK_ENDPOINT || "https://formsubmit.co/ajax/iyervalfoods@gmail.com";
 
-// Google Apps Script web app URL — receives order data and appends to Google Sheet
+// Google Apps Script web app URL
 const SHEETS_ENDPOINT = "https://script.google.com/macros/s/AKfycbwP1vGnwT-tmMcmUpvu8syqD8yt8im4LG3ziBv9NGL_WSeb-jssPlS9un_M3ALzNJjh/exec";
 
 // ================= APP SETUP =================
 const app = express();
 
-// ─── CORS ───
-// The frontend is served from THIS same server (Express serves public/index.html),
-// so the only origins that need CORS permission are local dev servers.
-// In production (Render), same-origin requests don't need CORS at all, but
-// listing the Render URL here is harmless and covers edge cases.
+// CORS configuration
 const ALLOWED_ORIGINS = [
-  process.env.FRONTEND_URL,   // optional override via env var
+  process.env.FRONTEND_URL,
   "http://localhost:3000",
   "http://localhost:5500",
   "http://127.0.0.1:5500"
@@ -47,8 +40,6 @@ const ALLOWED_ORIGINS = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow same-origin requests (origin is undefined for them)
-    // and any explicitly listed dev/staging origins
     if (!origin || ALLOWED_ORIGINS.includes(origin)) {
       callback(null, true);
     } else {
@@ -69,10 +60,6 @@ const razorpay = new Razorpay({
 });
 
 // ================= IN-MEMORY STORAGE =================
-// NOTE: This is cleared on every server restart/deploy.
-// Orders are permanently saved to Google Sheets via SHEETS_ENDPOINT,
-// so the in-memory array here is only used for the live admin dashboard
-// during the current server session.
 const orders    = [];
 const feedbacks = [];
 
@@ -103,42 +90,44 @@ app.get("/config", (req, res) => {
 });
 
 // ============================================================
-//   RAZORPAY BLOCK
+//   RAZORPAY ORDER CREATION
 // ============================================================
-//
-//   AMOUNT FLOW:
-//   Frontend  sends amount in RUPEES        e.g. 270
-//   Backend   converts to PAISE x100        e.g. 27000
-//   Razorpay  returns order.amount in PAISE e.g. 27000
-//   Frontend  passes data.amount directly to Razorpay checkout
-//             DO NOT multiply by 100 again on the frontend
-//
-// ============================================================
-
-// 1. Create Razorpay Order
 app.post("/create-order", async (req, res) => {
   try {
     const rupees = parseFloat(req.body.amount);
 
-    if (!isFinite(rupees) || rupees < 1) {
-      return res.status(400).json({ error: "Invalid amount. Must be a number >= 1 (in rupees)." });
+    // Validate amount
+    if (isNaN(rupees) || !isFinite(rupees) || rupees < 1) {
+      return res.status(400).json({ 
+        error: "Invalid amount. Amount must be at least ₹1." 
+      });
     }
 
+    const amountInPaise = Math.round(rupees * 100);
+    
+    console.log(`Creating Razorpay order: ₹${rupees} (${amountInPaise} paise)`);
+
     const order = await razorpay.orders.create({
-      amount:   Math.round(rupees * 100),
+      amount:   amountInPaise,
       currency: "INR",
       receipt:  "rcpt_" + Date.now()
     });
 
+    console.log(`✅ Order created: ${order.id}`);
     res.json(order);
 
   } catch (err) {
-    console.error("Razorpay create-order error:", err);
-    res.status(500).json({ error: "Payment initiation failed. Please try again." });
+    console.error("❌ Razorpay create-order error:", err);
+    // Send detailed error for debugging (but not exposing secrets)
+    res.status(500).json({ 
+      error: err.error?.description || err.message || "Payment initiation failed. Please try again."
+    });
   }
 });
 
-// 2. Verify Payment Signature
+// ============================================================
+//   VERIFY PAYMENT SIGNATURE
+// ============================================================
 app.post("/verify-payment", (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
@@ -153,21 +142,22 @@ app.post("/verify-payment", (req, res) => {
       .digest("hex");
 
     if (expected === razorpay_signature) {
+      console.log(`✅ Payment verified: ${razorpay_payment_id}`);
       res.json({ success: true });
     } else {
-      console.warn("Razorpay signature mismatch");
+      console.warn(`⚠️ Signature mismatch for order: ${razorpay_order_id}`);
       res.status(400).json({ success: false, message: "Invalid payment signature." });
     }
 
   } catch (err) {
-    console.error("verify-payment error:", err);
+    console.error("❌ verify-payment error:", err);
     res.status(500).json({ success: false, error: "Verification failed." });
   }
 });
 
 // ============================================================
-
-// Save Order
+//   SAVE ORDER
+// ============================================================
 app.post("/save-order", async (req, res) => {
   try {
     const orderData = {
@@ -177,10 +167,9 @@ app.post("/save-order", async (req, res) => {
       status:    "pending"
     };
 
-    // Keep in memory for the live admin dashboard this session
     orders.unshift(orderData);
 
-    // ── Persist to Google Sheets (fire-and-forget, never blocks the response) ──
+    // Fire-and-forget to Google Sheets
     fetch(SHEETS_ENDPOINT, {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
@@ -193,12 +182,12 @@ app.post("/save-order", async (req, res) => {
     res.json({ success: true, orderId: orderData.orderId, whatsappURL });
 
   } catch (err) {
-    console.error("save-order error:", err);
+    console.error("❌ save-order error:", err);
     res.status(500).json({ error: "Failed to save order." });
   }
 });
 
-// Admin - get orders
+// Admin routes
 app.post("/admin/orders", (req, res) => {
   const { passcode } = req.body;
   if (passcode === ADMIN_PASSCODE) {
@@ -208,7 +197,6 @@ app.post("/admin/orders", (req, res) => {
   }
 });
 
-// Admin - update order status
 app.post("/admin/update-order", (req, res) => {
   const { passcode, orderId, status } = req.body;
   if (passcode !== ADMIN_PASSCODE) return res.status(401).json({ success: false });
@@ -222,7 +210,6 @@ app.post("/admin/update-order", (req, res) => {
   }
 });
 
-// Admin - delete order
 app.post("/admin/delete-order", (req, res) => {
   const { passcode, orderId } = req.body;
   if (passcode !== ADMIN_PASSCODE) return res.status(401).json({ success: false });
@@ -278,8 +265,8 @@ app.use((err, req, res, next) => {
 // ================= START SERVER =================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Contact: ${CONTACT_EMAIL}`);
-  console.log(`Shipping fee: Rs.${REGULAR_SHIPPING_FEE}`);
-  console.log(`Razorpay key: ${RAZORPAY_KEY_ID}`);
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📧 Contact: ${CONTACT_EMAIL}`);
+  console.log(`🚚 Shipping fee: Rs.${REGULAR_SHIPPING_FEE}`);
+  console.log(`🔑 Razorpay key: ${RAZORPAY_KEY_ID}`);
 });
