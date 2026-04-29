@@ -426,7 +426,6 @@ section { position: relative; padding: 6rem 0; }
   border: 1px solid rgba(255,255,255,.06);
   background: rgba(255,255,255,.03);
   box-shadow: 0 12px 40px rgba(0,0,0,.2);
-  /* opacity:1 always — animation was hiding cards on mobile */
   opacity: 1;
   transition: box-shadow var(--ease), border-color var(--ease), transform var(--ease);
 }
@@ -435,14 +434,12 @@ section { position: relative; padding: 6rem 0; }
   box-shadow: 0 20px 60px rgba(0,0,0,.35);
   border-color: rgba(255,140,0,.12);
 }
-/* Touch devices: no hover lift — prevents cards getting stuck raised on mobile */
 @media (hover: none) {
   .menu-card:hover { transform: none; box-shadow: 0 12px 40px rgba(0,0,0,.2); border-color: rgba(255,255,255,.06); }
 }
 .menu-card-media {
   position: relative;
   width: 100%;
-  /* Fixed height instead of aspect-ratio — aspect-ratio collapses on some iOS/Android browsers */
   height: 180px;
   overflow: hidden;
   background: rgba(255,255,255,.04);
@@ -472,10 +469,8 @@ section { position: relative; padding: 6rem 0; }
   width: 100%; border-radius: var(--radius-sm);
   border: 1px solid rgba(255,255,255,.1);
   background: rgba(255,255,255,.04); color: var(--text);
-  /* Reduced vertical padding so cards don't overflow on small screens */
   padding: .6rem .85rem;
   transition: all var(--ease);
-  /* font-size 16px prevents iOS auto-zoom on focus */
   font-size: 16px;
 }
 .weight-row select:focus, .field input:focus, .field textarea:focus {
@@ -483,14 +478,13 @@ section { position: relative; padding: 6rem 0; }
   box-shadow: 0 0 0 3px rgba(255,140,0,.08);
 }
 .field textarea { min-height: 100px; resize: vertical; font-size: .9rem; }
-/* Prevent iOS auto-zoom on checkout form inputs */
 .field input, .field textarea, .field select {
   font-size: 16px;
 }
 .menu-card button {
   width: 100%; padding: .75rem 1rem;
   border-radius: var(--radius-sm); font-size: .88rem;
-  min-height: 44px; /* Apple HIG tap target minimum */
+  min-height: 44px;
 }
 .empty-state {
   padding: 3rem 2rem; border-radius: var(--radius-md);
@@ -811,7 +805,6 @@ section { position: relative; padding: 6rem 0; }
 @keyframes loadPulse { 0%,100% { box-shadow: 0 0 40px rgba(255,140,0,.2); } 50% { box-shadow: 0 0 60px rgba(255,140,0,.35); } }
 @keyframes loadBar { 0% { width: 0; } 60% { width: 80%; } 100% { width: 100%; } }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(32px); } to { opacity: 1; transform: translateY(0); } }
-/* cardIn animation removed — menu cards are always visible (was causing mobile invisibility bug) */
 @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
 @keyframes toastIn { from { opacity: 0; transform: translateX(40px) scale(.95); } to { opacity: 1; transform: translateX(0) scale(1); } }
@@ -857,7 +850,6 @@ section { position: relative; padding: 6rem 0; }
   .nav-links a { padding: .75rem 1rem; border-radius: 12px; }
   .hamburger { display: inline-grid; place-items: center; }
   .support-strip, .about-stats { grid-template-columns: 1fr; }
-  /* 2-column menu grid for tablets */
   .menu-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: .85rem; }
   .menu-card-media { height: 150px; }
 }
@@ -871,7 +863,6 @@ section { position: relative; padding: 6rem 0; }
   .nav-actions { width: 100%; justify-content: center; flex-wrap: wrap; }
   section { padding: 4rem 0; }
   .hero-grid { padding: 3rem 0 2.5rem; }
-  /* Single column on phones */
   .menu-grid { grid-template-columns: 1fr; gap: .75rem; }
   .contact-grid { grid-template-columns: 1fr; }
   .menu-card-media { height: 200px; }
@@ -885,12 +876,10 @@ section { position: relative; padding: 6rem 0; }
   .modal-card { padding: 1rem; }
   .cart-panel { border-radius: var(--radius-md) 0 0 var(--radius-md); }
   .toast-container { left: .75rem; right: .75rem; max-width: none; }
-  /* Checkout layout stacks properly on phone */
   .checkout-layout { gap: .85rem; }
   .summary-card, .payment-card { padding: 1rem; }
 }
 @media (max-width: 380px) {
-  /* Very small phones — compact everything further */
   .menu-grid { gap: .6rem; }
   .menu-card-media { height: 170px; }
   .menu-card-body { padding: .75rem; }
@@ -1270,7 +1259,7 @@ section { position: relative; padding: 6rem 0; }
    IYERVAL FOODS – Secure Backend Integration
    ═══════════════════════════════════════════ */
 
-// Backend URL (change to your Render URL after deployment)
+// Backend URL (use same origin)
 const BACKEND_URL = window.location.origin;
 
 // Config variables (fetched from backend)
@@ -1791,81 +1780,73 @@ function validateCheckoutForm() {
 }
 
 // ╔══════════════════════════════════════════════════════╗
-// ║           RAZORPAY BLOCK – FULLY REBUILT             ║
+// ║           RAZORPAY BLOCK – ENHANCED ERROR HANDLING   ║
 // ╚══════════════════════════════════════════════════════╝
 
-/*
-  AMOUNT FLOW (read before touching this block):
-  ──────────────────────────────────────────────
-  1. getTotal()         → rupees  (e.g. 270.00)
-  2. Sent to /create-order as { amount: 270.00 }  (rupees)
-  3. Backend does Math.round(270.00 * 100) = 27000 paise → Razorpay
-  4. Razorpay order.amount comes back as 27000 (paise)
-  5. We pass data.amount (27000 paise) directly to Razorpay checkout options
-     ← DO NOT multiply by 100 again here; it's already paise
-  6. Razorpay checkout shows ₹270 correctly ✅
-*/
-
 async function startRazorpayPayment() {
-  // Step 1 – validate form fields
   const formData = validateCheckoutForm();
   if (!formData) return;
 
-  // Step 2 – block test-only cart
   const hasOnlyTest = state.cart.length === 1 && state.cart[0].id === 5;
   if (hasOnlyTest) {
     toast("Cannot place order with only Test Product. Add real items.", "error", 3000);
     return;
   }
 
-  // Step 3 – get the exact rupee total directly from state (not from DOM text)
-  //          getTotal() returns a clean JS number like 270 — no parsing needed
   const totalRupees = getTotal();
   if (!totalRupees || totalRupees < 1) {
     toast("Order total is too low to process.", "error");
     return;
   }
 
-  // Step 4 – show loading state on button
   el.rzpPayBtn.disabled = true;
   el.rzpPayBtn.textContent = "⏳ Initialising...";
   el.rzpStatus.textContent = "";
   el.rzpStatus.className = "status-message";
 
   try {
-    // Step 5 – ask backend to create a Razorpay order
-    //          send amount in RUPEES; backend converts to paise
+    console.log(`💰 Creating Razorpay order for ₹${totalRupees}`);
     const createRes = await fetch(BACKEND_URL + "/create-order", {
-      method:  "POST",
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ amount: totalRupees })
+      body: JSON.stringify({ amount: totalRupees })
     });
 
-    if (!createRes.ok) {
-      const errData = await createRes.json().catch(() => ({}));
-      throw new Error(errData.error || "Server error creating order");
+    const responseText = await createRes.text();
+    console.log("📡 Server response:", responseText);
+
+    let rzpOrder;
+    try {
+      rzpOrder = JSON.parse(responseText);
+    } catch (e) {
+      throw new Error(`Server returned invalid JSON: ${responseText.substring(0, 100)}`);
     }
 
-    const rzpOrder = await createRes.json();
-    // rzpOrder.amount is in PAISE (e.g. 27000); pass as-is below
+    if (!createRes.ok) {
+      throw new Error(rzpOrder.error || `Server error (${createRes.status})`);
+    }
 
-    // Step 6 – open Razorpay checkout
+    if (!rzpOrder.id) {
+      throw new Error("Razorpay order ID missing from server response");
+    }
+
+    console.log(`✅ Order created: ${rzpOrder.id}, amount: ${rzpOrder.amount} paise`);
+
     const options = {
-      key:         RAZORPAY_KEY,
-      amount:      rzpOrder.amount,   // paise – already correct, DO NOT multiply again
-      currency:    rzpOrder.currency || "INR",
-      name:        "IYERVAL FOODS",
+      key: RAZORPAY_KEY,
+      amount: rzpOrder.amount,
+      currency: rzpOrder.currency || "INR",
+      name: "IYERVAL FOODS",
       description: "Fresh & Preservative-Free Food Order",
-      order_id:    rzpOrder.id,       // Razorpay order ID (string starting with "order_")
+      order_id: rzpOrder.id,
       prefill: {
-        name:    document.getElementById("customerName").value.trim(),
+        name: document.getElementById("customerName").value.trim(),
         contact: document.getElementById("customerPhone").value.trim(),
-        email:   CONTACT_EMAIL
+        email: CONTACT_EMAIL
       },
       theme: { color: "#FF8C00" },
       modal: {
         ondismiss: function () {
-          // User closed the Razorpay popup without paying
           el.rzpPayBtn.disabled = false;
           el.rzpPayBtn.textContent = "💳 Pay with Razorpay";
           el.rzpStatus.textContent = "Payment cancelled.";
@@ -1873,15 +1854,11 @@ async function startRazorpayPayment() {
         }
       },
       handler: async function (response) {
-        // Called by Razorpay ONLY after a successful payment
-        // response = { razorpay_order_id, razorpay_payment_id, razorpay_signature }
         await verifyAndSaveOrder(response);
       }
     };
 
     const rzp = new Razorpay(options);
-
-    // Handle payment failure inside the Razorpay popup
     rzp.on("payment.failed", function (response) {
       console.error("Razorpay payment failed:", response.error);
       el.rzpPayBtn.disabled = false;
@@ -1890,34 +1867,32 @@ async function startRazorpayPayment() {
       el.rzpStatus.className = "status-message error";
       toast("Payment failed. Please try again.", "error");
     });
-
     rzp.open();
 
   } catch (err) {
-    console.error("startRazorpayPayment error:", err);
+    console.error("❌ startRazorpayPayment error:", err);
     el.rzpPayBtn.disabled = false;
     el.rzpPayBtn.textContent = "💳 Pay with Razorpay";
-    el.rzpStatus.textContent = "Could not start payment. Please try again.";
+    const errorMsg = err.message || "Could not start payment. Please try again.";
+    el.rzpStatus.textContent = errorMsg;
     el.rzpStatus.className = "status-message error";
-    toast("Payment initiation failed. Please try again.", "error");
+    toast("Error: " + errorMsg, "error");
   }
 }
 
 async function verifyAndSaveOrder(response) {
-  // Show verifying state
   el.rzpPayBtn.textContent = "⏳ Verifying...";
   el.rzpStatus.textContent = "Verifying payment...";
   el.rzpStatus.className = "status-message";
 
   try {
-    // Step 1 – verify signature on backend
     const verifyRes = await fetch(BACKEND_URL + "/verify-payment", {
-      method:  "POST",
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({
-        razorpay_order_id:  response.razorpay_order_id,
+      body: JSON.stringify({
+        razorpay_order_id: response.razorpay_order_id,
         razorpay_payment_id: response.razorpay_payment_id,
-        razorpay_signature:  response.razorpay_signature
+        razorpay_signature: response.razorpay_signature
       })
     });
 
@@ -1932,23 +1907,21 @@ async function verifyAndSaveOrder(response) {
       return;
     }
 
-    // Step 2 – signature verified; build and save the order
     const formData = new FormData(el.checkoutForm);
-    const order    = buildOrder(formData, "Razorpay");
-    order.paymentId       = response.razorpay_payment_id;
+    const order = buildOrder(formData, "Razorpay");
+    order.paymentId = response.razorpay_payment_id;
     order.razorpayOrderId = response.razorpay_order_id;
 
     const saveRes = await fetch(BACKEND_URL + "/save-order", {
-      method:  "POST",
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify(order)
+      body: JSON.stringify(order)
     });
 
     const saveData = await saveRes.json();
 
     if (saveData.success) {
       order.orderId = saveData.orderId;
-      // Reset button before finalizing (finalizeOrder clears the form/cart)
       el.rzpPayBtn.disabled = false;
       el.rzpPayBtn.textContent = "💳 Pay with Razorpay";
       el.rzpStatus.textContent = "";
@@ -2146,7 +2119,6 @@ function init() {
   state.testUnlocked = false;
   el.adminPanel.classList.remove("visible");
 
-  // ★ Remove test product from cart if test mode is off
   if (!state.testUnlocked) {
     state.cart = state.cart.filter(item => item.id !== 5);
     saveState(STORAGE_KEYS.cart, state.cart);
