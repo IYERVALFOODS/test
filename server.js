@@ -25,7 +25,7 @@ const CONTACT_EMAIL        = process.env.CONTACT_EMAIL     || "iyervalfoods@gmai
 const FEEDBACK_ENDPOINT    = process.env.FEEDBACK_ENDPOINT || "https://formsubmit.co/ajax/iyervalfoods@gmail.com";
 
 // Google Apps Script web app URL
-const SHEETS_ENDPOINT = "https://script.google.com/macros/s/AKfycbwP1vGnwT-tmMcmUpvu8syqD8yt8im4LG3ziBv9NGL_WSeb-jssPlS9un_M3ALzNJjh/exec";
+const SHEETS_ENDPOINT = process.env.GOOGLE_SHEET_URL || "https://script.google.com/macros/s/AKfycbwP1vGnwT-tmMcmUpvu8syqD8yt8im4LG3ziBv9NGL_WSeb-jssPlS9un_M3ALzNJjh/exec";
 
 // ================= APP SETUP =================
 const app = express();
