@@ -8,6 +8,9 @@ const Razorpay = require("razorpay");
 const crypto   = require("crypto");
 
 // ================= ENV VALIDATION =================
+// These MUST be set in Render's environment variables dashboard.
+// If any are missing the server crashes on startup with a clear message
+// rather than silently using wrong values.
 const REQUIRED_ENV = ["RAZORPAY_KEY_ID", "RAZORPAY_SECRET", "ADMIN_PASSCODE"];
 const missing = REQUIRED_ENV.filter(k => !process.env[k]);
 if (missing.length) {
@@ -23,19 +26,36 @@ const RAZORPAY_SECRET      = process.env.RAZORPAY_SECRET;
 const REGULAR_SHIPPING_FEE = parseInt(process.env.REGULAR_SHIPPING_FEE) || 70;
 const CONTACT_EMAIL        = process.env.CONTACT_EMAIL     || "iyervalfoods@gmail.com";
 const FEEDBACK_ENDPOINT    = process.env.FEEDBACK_ENDPOINT || "https://formsubmit.co/ajax/iyervalfoods@gmail.com";
-const GOOGLE_SHEET_URL     = process.env.GOOGLE_SHEET_URL  || "";   // Apps Script Web App URL
+
+// Google Apps Script web app URL — receives order data and appends to Google Sheet
+const SHEETS_ENDPOINT = "https://script.google.com/macros/s/AKfycbwP1vGnwT-tmMcmUpvu8syqD8yt8im4LG3ziBv9NGL_WSeb-jssPlS9un_M3ALzNJjh/exec";
 
 // ================= APP SETUP =================
 const app = express();
 
+// ─── CORS ───
+// The frontend is served from THIS same server (Express serves public/index.html),
+// so the only origins that need CORS permission are local dev servers.
+// In production (Render), same-origin requests don't need CORS at all, but
+// listing the Render URL here is harmless and covers edge cases.
+const ALLOWED_ORIGINS = [
+  process.env.FRONTEND_URL,   // optional override via env var
+  "http://localhost:3000",
+  "http://localhost:5500",
+  "http://127.0.0.1:5500"
+].filter(Boolean);
+
 app.use(cors({
-  origin: [
-    "https://iyerval-backend.onrender.com",
-    "http://localhost:3000",
-    "http://localhost:5500",
-    "http://127.0.0.1:5500"
-  ],
-  methods: ["GET", "POST"],
+  origin: (origin, callback) => {
+    // Allow same-origin requests (origin is undefined for them)
+    // and any explicitly listed dev/staging origins
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods:     ["GET", "POST"],
   credentials: true
 }));
 
@@ -49,67 +69,22 @@ const razorpay = new Razorpay({
 });
 
 // ================= IN-MEMORY STORAGE =================
+// NOTE: This is cleared on every server restart/deploy.
+// Orders are permanently saved to Google Sheets via SHEETS_ENDPOINT,
+// so the in-memory array here is only used for the live admin dashboard
+// during the current server session.
 const orders    = [];
 const feedbacks = [];
-
-// ================= GOOGLE SHEETS HELPER =================
-/**
- * Sends order data to Google Sheets via Apps Script Web App.
- * Fails silently — a Sheets error will never break the order flow.
- */
-async function logOrderToSheet(orderData) {
-  if (!GOOGLE_SHEET_URL) {
-    console.log("ℹ️  GOOGLE_SHEET_URL not set — skipping Sheets logging.");
-    return;
-  }
-
-  try {
-    const payload = {
-      orderId:       orderData.orderId,
-      name:          orderData.name          || "",
-      phone:         orderData.phone         || "",
-      pincode:       orderData.pincode       || "",
-      address:       orderData.address       || "",
-      notes:         orderData.notes         || "",
-      items:         orderData.items         || [],
-      subtotal:      orderData.subtotal      || 0,
-      shipping:      orderData.shipping      || 0,
-      total:         orderData.total         || 0,
-      paymentMethod: orderData.paymentMethod || "Unknown",
-      timestamp:     orderData.timestamp,
-      status:        orderData.status        || "pending"
-    };
-
-    const response = await fetch(GOOGLE_SHEET_URL, {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify(payload)
-    });
-
-    const result = await response.json();
-
-    if (result.success) {
-      console.log(`✅ Order ${orderData.orderId} logged to Google Sheets.`);
-    } else {
-      console.warn(`⚠️  Sheets logging failed for ${orderData.orderId}:`, result.error);
-    }
-
-  } catch (err) {
-    // Never crash the server — Sheets logging is best-effort
-    console.warn("⚠️  Could not reach Google Sheets:", err.message);
-  }
-}
 
 // ================= ROUTES =================
 
 // Health check
 app.get("/health", (req, res) => {
   res.json({
-    status:       "ok",
-    timestamp:    new Date().toISOString(),
-    orders:       orders.length,
-    feedbacks:    feedbacks.length,
-    sheetsLinked: !!GOOGLE_SHEET_URL
+    status:    "ok",
+    timestamp: new Date().toISOString(),
+    orders:    orders.length,
+    feedbacks: feedbacks.length
   });
 });
 
@@ -192,7 +167,7 @@ app.post("/verify-payment", (req, res) => {
 
 // ============================================================
 
-// Save Order  ← NOW LOGS TO GOOGLE SHEETS AUTOMATICALLY
+// Save Order
 app.post("/save-order", async (req, res) => {
   try {
     const orderData = {
@@ -202,14 +177,16 @@ app.post("/save-order", async (req, res) => {
       status:    "pending"
     };
 
-    // 1. Save in-memory (existing behaviour)
+    // Keep in memory for the live admin dashboard this session
     orders.unshift(orderData);
 
-    // 2. Log to Google Sheets (new — non-blocking)
-    logOrderToSheet(orderData);   // intentionally not awaited so the customer
-                                  // gets an instant response regardless
+    // ── Persist to Google Sheets (fire-and-forget, never blocks the response) ──
+    fetch(SHEETS_ENDPOINT, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(orderData)
+    }).catch(err => console.error("Google Sheets sync failed:", err.message));
 
-    // 3. Build WhatsApp notification URL (existing behaviour)
     const message     = `New Order!\n----------\n${orderData.orderId}\n${orderData.name}\n${orderData.phone}\n${orderData.address}\nTotal: Rs.${orderData.total}\n\nItems: ${orderData.items.map(i => `${i.name} x${i.quantity}`).join(", ")}`;
     const whatsappURL = `https://wa.me/918848636679?text=${encodeURIComponent(message)}`;
 
@@ -305,5 +282,4 @@ app.listen(PORT, () => {
   console.log(`Contact: ${CONTACT_EMAIL}`);
   console.log(`Shipping fee: Rs.${REGULAR_SHIPPING_FEE}`);
   console.log(`Razorpay key: ${RAZORPAY_KEY_ID}`);
-  console.log(`Google Sheets: ${GOOGLE_SHEET_URL ? "✅ Connected" : "⚠️  Not configured (set GOOGLE_SHEET_URL)"}`);
-});
+}); 
