@@ -341,7 +341,7 @@ section { position: relative; padding: 6rem 0; }
 .section-head h2 { font-size: clamp(2rem, 4vw, 3.2rem); font-weight: 800; }
 .section-head p { color: var(--muted); line-height: 1.8; }
 
-/* ─── SUPPORT STRIP ─── */
+/* ─── SUPPORT STRIP (reveal class removed) ─── */
 .support-strip {
   display: grid; grid-template-columns: repeat(3, minmax(0,1fr));
   gap: 1rem; margin-top: -2.5rem; position: relative; z-index: 2;
@@ -793,14 +793,7 @@ section { position: relative; padding: 6rem 0; }
   color: var(--muted); font-size: .85rem;
 }
 
-/* ─── REVEAL ─── */
-.reveal {
-  opacity: 0; transform: translateY(32px);
-  transition: opacity .7s ease, transform .7s ease;
-}
-.reveal.visible { opacity: 1; transform: translateY(0); }
-
-/* ─── KEYFRAMES ─── */
+/* ─── KEYFRAMES (removed .reveal related styles, kept others) ─── */
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes loadPulse { 0%,100% { box-shadow: 0 0 40px rgba(255,140,0,.2); } 50% { box-shadow: 0 0 60px rgba(255,140,0,.35); } }
 @keyframes loadBar { 0% { width: 0; } 60% { width: 80%; } 100% { width: 100%; } }
@@ -975,8 +968,8 @@ section { position: relative; padding: 6rem 0; }
   </div>
 </section>
 
-<!-- SUPPORT STRIP -->
-<div class="container support-strip reveal">
+<!-- SUPPORT STRIP (removed reveal class) -->
+<div class="container support-strip">
   <article class="support-card glass">
     <strong>🌿 Farm‑fresh ingredients</strong>
     <p>We source directly from local farms – no artificial preservatives, no synthetic colours.</p>
@@ -991,7 +984,7 @@ section { position: relative; padding: 6rem 0; }
   </article>
 </div>
 
-<!-- MENU -->
+<!-- MENU (removed reveal class) -->
 <section id="menu">
   <div class="container">
     <div class="section-head">
@@ -1010,8 +1003,8 @@ section { position: relative; padding: 6rem 0; }
   </div>
 </section>
 
-<!-- ABOUT -->
-<section id="about" class="reveal">
+<!-- ABOUT (removed reveal class) -->
+<section id="about">
   <div class="container">
     <div class="section-head">
       <span class="eyebrow">Our philosophy</span>
@@ -1048,8 +1041,8 @@ section { position: relative; padding: 6rem 0; }
   </div>
 </section>
 
-<!-- CONTACT -->
-<section id="contact" class="reveal">
+<!-- CONTACT (removed reveal class) -->
+<section id="contact">
   <div class="container">
     <div class="section-head">
       <span class="eyebrow">Get in touch</span>
@@ -1256,7 +1249,7 @@ section { position: relative; padding: 6rem 0; }
 
 <script>
 /* ═══════════════════════════════════════════
-   IYERVAL FOODS – Secure Backend Integration
+   IYERVAL FOODS – Secure Backend Integration (no reveal animations)
    ═══════════════════════════════════════════ */
 
 const BACKEND_URL = window.location.origin;
@@ -2104,15 +2097,7 @@ function bindEvents() {
   if (el.passcodeInput) el.passcodeInput.addEventListener("keypress", (e) => { if (e.key === "Enter") checkPasscode(); });
 }
 
-function setupRevealAnimations() {
-  const observer = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) { entry.target.classList.add("visible"); observer.unobserve(entry.target); }
-    });
-  }, { threshold: .12 });
-  document.querySelectorAll(".reveal").forEach(el => observer.observe(el));
-}
-
+// No scroll‑based reveal animations – the function is removed, and init also doesn't call it.
 function init() {
   state.adminVisible = false;
   state.testUnlocked = false;
@@ -2128,7 +2113,7 @@ function init() {
   renderOrders();
   renderCheckoutSummary();
   bindEvents();
-  setupRevealAnimations();
+  // setupRevealAnimations() removed entirely
   window.addEventListener("load", () => setTimeout(() => el.loadingScreen.classList.add("hidden"), 800));
 }
 
