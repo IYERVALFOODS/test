@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>IYERVAL FOODS | Pure. Fresh. Preservative‑Free.</title>
 <meta name="description" content="IYERVAL FOODS – 100% natural, no artificial preservatives. Farm-fresh traditional snacks and pickles delivered to your door." />
-<link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@main/assets/1.png" />
+<link rel="icon" type="image/png" href="https://res.cloudinary.com/dlvelty2r/image/upload/v1777552669/1_wd4fcp.png" />
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <style>
 /* ─── RESET & TOKENS (unchanged) ─── */
@@ -320,7 +320,7 @@ ul, ol { list-style: none; }
 }
 .hero-card-media {
   min-height: 420px; position: relative;
-  background: url(https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@main/assets/240_F_1588623526_ckztwNhWh51A0ZXKxDgbhN4sEKTCG4T4.jpg) center/cover;
+  background: url(https://res.cloudinary.com/dlvelty2r/image/upload/v1777552668/240_F_1588623526_ckztwNhWh51A0ZXKxDgbhN4sEKTCG4T4_ib8mgj.jpg) center/cover;
 }
 .hero-card-media::after {
   content: ''; position: absolute; inset: 0;
@@ -382,7 +382,7 @@ section { position: relative; padding: 6rem 0; }
   content: ''; position: absolute; inset: 0;
   background:
     linear-gradient(180deg, transparent 20%, rgba(10,10,11,.82) 100%),
-    url("https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@main/images/2.jpg") center/cover;
+    url("https://res.cloudinary.com/dlvelty2r/image/upload/v1777552660/2_hgndv8.jpg") center/cover;
 }
 .about-media-badge {
   position: absolute; left: 1rem; right: 1rem; bottom: 1rem;
@@ -894,7 +894,7 @@ section { position: relative; padding: 6rem 0; }
   <div class="loading-wrap">
     <div class="loading-logo-wrap">
       <div class="loading-ring"></div>
-      <img class="loading-logo" src="https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@main/assets/1.png" alt="IYERVAL FOODS logo" />
+      <img class="loading-logo" src="https://res.cloudinary.com/dlvelty2r/image/upload/v1777552669/1_wd4fcp.png" alt="IYERVAL FOODS logo" />
     </div>
     <p class="loading-text">Loading farm-fresh goodness</p>
     <div class="loading-bar"><div class="loading-bar-fill"></div></div>
@@ -911,7 +911,7 @@ section { position: relative; padding: 6rem 0; }
 <header class="navbar" id="navbar">
   <div class="container nav-inner">
     <a class="brand" href="#home" aria-label="IYERVAL FOODS home">
-      <img src="https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@main/assets/1.png" alt="IYERVAL FOODS logo" />
+      <img src="https://res.cloudinary.com/dlvelty2r/image/upload/v1777552669/1_wd4fcp.png" alt="IYERVAL FOODS logo" />
       <div class="brand-copy">
         <strong>IYERVAL FOODS</strong>
         <span>Preservative‑free · Naturally fresh</span>
@@ -928,7 +928,7 @@ section { position: relative; padding: 6rem 0; }
     <div class="nav-actions">
       <button class="ghost-btn" id="testModeBtn" type="button">🔒 Test</button>
       <button class="ghost-btn" id="adminToggleBtn" type="button">Admin</button>
-      <img class="nav-mini-logo" src="https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@main/assets/2.png" alt="" />
+      <img class="nav-mini-logo" src="https://res.cloudinary.com/dlvelty2r/image/upload/v1777552670/2_qnnawz.png" alt="" />
       <button class="icon-btn" id="navCartBtn" type="button" aria-label="Open cart">
         🛒<span class="cart-count" id="navCartCount">0</span>
       </button>
@@ -955,7 +955,7 @@ section { position: relative; padding: 6rem 0; }
   </div>
   <div class="container hero-grid">
     <div class="hero-copy">
-      <img class="hero-logo" src="https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@main/assets/1.png" alt="IYERVAL FOODS main logo" />
+      <img class="hero-logo" src="https://res.cloudinary.com/dlvelty2r/image/upload/v1777552669/1_wd4fcp.png" alt="IYERVAL FOODS main logo" />
       <span class="eyebrow">✦ 100% Natural · Zero Preservatives</span>
       <h1>Freshness in every <span>wholesome bite.</span></h1>
       <p>Explore our range of traditionally crafted, preservative‑free pantry favourites. Choose your preferred weight and pay securely with Razorpay – cards, UPI, netbanking, wallets all supported.</p>
@@ -992,7 +992,7 @@ section { position: relative; padding: 6rem 0; }
 </div>
 
 <!-- MENU -->
-<section id="menu">
+<section id="menu" class="reveal">
   <div class="container">
     <div class="section-head">
       <span class="eyebrow">Pure ingredients</span>
@@ -1289,19 +1289,19 @@ const WEIGHT_OPTIONS = [
 ];
 
 const menuItems = [
-  { id: 1, name: "Thair Mulagai", category: "Snacks", basePrice: 120, description: "Curd-soaked sun-dried chillies, a spicy treat.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@main/images/1.jpg" },
-  { id: 3, name: "Avakaya Mango Pickle", category: "Meals", basePrice: 60, description: "Andhra-style mango pickle with aromatic spices – no vinegar, no preservatives.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@main/images/5.jpg" },
-  { id: 6, name: "Karuvadam", category: "Snacks", basePrice: 35, description: "Traditional sun-dried karuvadam, crispy and light.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@bc523026b580d0b017a8a22816939d60ccdc6e87/assets/1100x1100.jpeg" },
-  { id: 7, name: "Onion Karuvadam", category: "Snacks", basePrice: 40, description: "Crunchy onion-flavoured karuvadam.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@bc523026b580d0b017a8a22816939d60ccdc6e87/assets/Onion_1.webp" },
-  { id: 8, name: "Vazhathandu Karuvadam", category: "Snacks", basePrice: 42.5, description: "Delicious banana stem karuvadam.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@bc523026b580d0b017a8a22816939d60ccdc6e87/assets/kaipunnyam-unnithandu.webp" },
-  { id: 9, name: "Pavakkai Vathal", category: "Snacks", basePrice: 100, description: "Bitter gourd vathal, a healthy crispy snack.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@bc523026b580d0b017a8a22816939d60ccdc6e87/assets/images%20(1).jpeg" },
-  { id: 10, name: "Sambar Podi", category: "Meals", basePrice: 40, description: "Freshly ground sambar powder for authentic taste.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@bc523026b580d0b017a8a22816939d60ccdc6e87/assets/Sambar-Podi.webp" },
-  { id: 11, name: "Vathal Kuzhambu Mix", category: "Meals", basePrice: 60, description: "Spicy vathal kuzhambu paste for a tangy curry.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@bc523026b580d0b017a8a22816939d60ccdc6e87/assets/SriVaraha-Foods-Vatha-Kuzhambu-Mix-Paste-Vatha-Kulambu-2.webp" },
-  { id: 12, name: "Chundakkai Vathal", category: "Snacks", basePrice: 100, description: "Turkey berry vathal, a traditional delicacy.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@bc523026b580d0b017a8a22816939d60ccdc6e87/assets/Sundakkai-vathal.jpg" },
-  { id: 13, name: "Arisi Vadam", category: "Snacks", basePrice: 50, description: "Rice vadam, light and perfect for frying. (10 nos)", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@bc523026b580d0b017a8a22816939d60ccdc6e87/assets/Rice-Vadam-%E2%80%93-Jeera.jpg" },
-  { id: 14, name: "Poola Pappadam", category: "Snacks", basePrice: 50, description: "Tapioca rice pappadam, crisp and airy. (10 nos)", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@bc523026b580d0b017a8a22816939d60ccdc6e87/assets/TappiacoRicePappadam.webp" },
+  { id: 1, name: "Thair Mulagai", category: "Snacks", basePrice: 120, description: "Curd-soaked sun-dried chillies, a spicy treat.", image: "https://res.cloudinary.com/dlvelty2r/image/upload/v1777552668/images_lbf6si.jpg" },
+  { id: 3, name: "Avakaya Mango Pickle", category: "Meals", basePrice: 60, description: "Andhra-style mango pickle with aromatic spices – no vinegar, no preservatives.", image: "https://res.cloudinary.com/dlvelty2r/image/upload/v1777552662/5_ayqtyk.png" },
+  { id: 6, name: "Karuvadam", category: "Snacks", basePrice: 35, description: "Traditional sun-dried karuvadam, crispy and light.", image: "https://res.cloudinary.com/dlvelty2r/image/upload/v1777552668/1100x1100_bmd3ce.jpg" },
+  { id: 7, name: "Onion Karuvadam", category: "Snacks", basePrice: 40, description: "Crunchy onion-flavoured karuvadam.", image: "https://res.cloudinary.com/dlvelty2r/image/upload/v1777552669/Onion_1_arslnt.webp" },
+  { id: 8, name: "Vazhathandu Karuvadam", category: "Snacks", basePrice: 42.5, description: "Delicious banana stem karuvadam.", image: "https://res.cloudinary.com/dlvelty2r/image/upload/v1777552660/3_zfznfh.jpg" },
+  { id: 9, name: "Pavakkai Vathal", category: "Snacks", basePrice: 100, description: "Bitter gourd vathal, a healthy crispy snack.", image: "https://res.cloudinary.com/dlvelty2r/image/upload/v1777552668/images_1_ah9nce.jpg" },
+  { id: 10, name: "Sambar Podi", category: "Meals", basePrice: 40, description: "Freshly ground sambar powder for authentic taste.", image: "https://res.cloudinary.com/dlvelty2r/image/upload/v1777552670/Sambar-Podi_vawz8o.webp" },
+  { id: 11, name: "Vathal Kuzhambu Mix", category: "Meals", basePrice: 60, description: "Spicy vathal kuzhambu paste for a tangy curry.", image: "https://res.cloudinary.com/dlvelty2r/image/upload/v1777552670/SriVaraha-Foods-Vatha-Kuzhambu-Mix-Paste-Vatha-Kulambu-2_mgkwfo.webp" },
+  { id: 12, name: "Chundakkai Vathal", category: "Snacks", basePrice: 100, description: "Turkey berry vathal, a traditional delicacy.", image: "https://res.cloudinary.com/dlvelty2r/image/upload/v1777552670/Sundakkai-vathal_kqt58o.jpg" },
+  { id: 13, name: "Arisi Vadam", category: "Snacks", basePrice: 50, description: "Rice vadam, light and perfect for frying. (10 nos)", image: "https://res.cloudinary.com/dlvelty2r/image/upload/v1777552669/Rice-Vadam-_-Jeera_rmvjop.jpg" },
+  { id: 14, name: "Poola Pappadam", category: "Snacks", basePrice: 50, description: "Tapioca rice pappadam, crisp and airy. (10 nos)", image: "https://res.cloudinary.com/dlvelty2r/image/upload/v1777552670/TappiacoRicePappadam_olwqqm.webp" },
   // Test product (hidden)
-  { id: 5, name: "Test Product (Rs.1)", category: "Drinks", basePrice: 1, description: "Hidden test item. Free shipping.", image: "https://cdn.jsdelivr.net/gh/IYERVALFOODS/iyerfood@main/assets/1.png", hidden: true }
+  { id: 5, name: "Test Product (Rs.1)", category: "Drinks", basePrice: 1, description: "Hidden test item. Free shipping.", image: "https://res.cloudinary.com/dlvelty2r/image/upload/v1777552669/1_wd4fcp.png", hidden: true }
 ];
 
 const state = {
