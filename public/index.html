@@ -1259,11 +1259,10 @@ section { position: relative; padding: 6rem 0; }
    IYERVAL FOODS – Secure Backend Integration
    ═══════════════════════════════════════════ */
 
-// Backend URL (use same origin)
 const BACKEND_URL = window.location.origin;
 
-// Config variables (fetched from backend)
-let RAZORPAY_KEY = "rzp_test_SYWrfVzSNTbDes";
+// Config variables (fetched from backend – no hardcoded fallback)
+let RAZORPAY_KEY = "";
 let CONTACT_EMAIL = "iyervalfoods@gmail.com";
 let REGULAR_SHIPPING_FEE = 70;
 
