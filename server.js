@@ -2,26 +2,30 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-require("dotenv").config();
-const Razorpay = require("razorpay");
 const crypto = require("crypto");
+require("dotenv").config();
 
 // ================= VALIDATE ENV VARIABLES =================
-const required = ["RAZORPAY_KEY_ID", "RAZORPAY_SECRET", "ADMIN_PASSCODE"];
+const required = ["ADMIN_PASSCODE", "SBIEPAY_MERCHANT_ID", "SBIEPAY_ACCESS_CODE", "SBIEPAY_SECRET_KEY"];
 const missing = required.filter(k => !process.env[k]);
 if (missing.length) {
   console.error("❌ Missing env vars:", missing.join(", "));
-  console.error("Add them in Render Dashboard → Environment");
   process.exit(1);
 }
 
-const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID;
-const RAZORPAY_SECRET = process.env.RAZORPAY_SECRET;
 const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE;
 const REGULAR_SHIPPING_FEE = parseInt(process.env.REGULAR_SHIPPING_FEE) || 70;
 const CONTACT_EMAIL = process.env.CONTACT_EMAIL || "iyervalfoods@gmail.com";
 const FEEDBACK_ENDPOINT = process.env.FEEDBACK_ENDPOINT || "https://formsubmit.co/ajax/iyervalfoods@gmail.com";
-const SHEETS_ENDPOINT = process.env.GOOGLE_SHEET_URL || "https://script.google.com/macros/s/AKfycbwP1vGnwT-tmMcmUpvu8syqD8yt8im4LG3ziBv9NGL_WSeb-jssPlS9un_M3ALzNJjh/exec";
+const SHEETS_ENDPOINT = process.env.GOOGLE_SHEET_URL || "";
+
+// SBI ePay config
+const MERCHANT_ID = process.env.SBIEPAY_MERCHANT_ID;
+const ACCESS_CODE = process.env.SBIEPAY_ACCESS_CODE;
+const SECRET_KEY = process.env.SBIEPAY_SECRET_KEY;
+const RETURN_URL = process.env.SBIEPAY_RETURN_URL || "https://yourdomain.com/payment-response";
+const SBIEPAY_GATEWAY_URL = "https://secure.sbiepay.com/secure/transaction.do"; // production
+// For testing, use their sandbox if available – adjust accordingly.
 
 // ================= INIT EXPRESS =================
 const app = express();
@@ -29,18 +33,26 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-// ================= INIT RAZORPAY =================
-let razorpay;
-try {
-  razorpay = new Razorpay({ key_id: RAZORPAY_KEY_ID, key_secret: RAZORPAY_SECRET });
-  console.log("✅ Razorpay client ready");
-} catch (err) {
-  console.error("❌ Razorpay init failed:", err.message);
-  process.exit(1);
+// In-memory storage for orders + temporary payment sessions
+const orders = [];
+const paymentSessions = new Map(); // key = merchantOrderId, value = orderData
+
+// ================= HELPER: Generate SHA‑512 Checksum (as per SBI ePay) =================
+function generateChecksum(data) {
+  // Data should be a string of sorted key-value pairs separated with '|'
+  // Example: "merchant_id|order_id|amount|currency|redirect_url|access_code"
+  const hashString = data + "|" + SECRET_KEY;
+  return crypto.createHash("sha512").update(hashString).digest("hex");
 }
 
-// In-memory storage
-const orders = [];
+function verifyChecksum(postData, receivedChecksum) {
+  // Remove 'checksum' from data before computing
+  const { checksum, ...rest } = postData;
+  const sortedKeys = Object.keys(rest).sort();
+  const dataString = sortedKeys.map(key => rest[key]).join("|");
+  const expected = generateChecksum(dataString);
+  return expected === receivedChecksum;
+}
 
 // ================= ROUTES =================
 app.get("/health", (req, res) => {
@@ -51,65 +63,152 @@ app.get("/config", (req, res) => {
   res.json({
     shippingFee: REGULAR_SHIPPING_FEE,
     contactEmail: CONTACT_EMAIL,
-    razorpayKey: RAZORPAY_KEY_ID,
   });
 });
 
-app.post("/create-order", async (req, res) => {
+// Step 1: Create payment session and return SBI ePay form parameters
+app.post("/initiate-payment", (req, res) => {
   try {
-    const rupees = parseFloat(req.body.amount);
-    if (isNaN(rupees) || rupees < 1) {
-      return res.status(400).json({ error: "Invalid amount (min ₹1)" });
+    const orderData = req.body;
+    // Required fields from frontend
+    if (!orderData.amount || !orderData.name || !orderData.phone || !orderData.email) {
+      return res.status(400).json({ error: "Missing required fields" });
     }
-    const amountPaise = Math.round(rupees * 100);
-    console.log(`💰 Creating order: ₹${rupees} (${amountPaise} paise)`);
-    const order = await razorpay.orders.create({
-      amount: amountPaise,
-      currency: "INR",
-      receipt: "rcpt_" + Date.now(),
+
+    const merchantOrderId = "IYER" + Date.now().toString().slice(-8);
+    const amountInPaise = Math.round(parseFloat(orderData.amount) * 100);
+    const amountInRupees = (amountInPaise / 100).toFixed(2);
+
+    // Store the full order temporarily
+    paymentSessions.set(merchantOrderId, {
+      ...orderData,
+      merchantOrderId,
+      status: "pending",
+      createdAt: Date.now()
     });
-    console.log(`✅ Order created: ${order.id}`);
-    res.json(order);
+
+    // SBI ePay required fields (as per their documentation)
+    const postData = {
+      merchant_id: MERCHANT_ID,
+      order_id: merchantOrderId,
+      amount: amountInRupees,
+      currency: "INR",
+      redirect_url: RETURN_URL,
+      cancel_url: RETURN_URL,
+      language: "EN",
+      name: orderData.name,
+      email: orderData.email,
+      phone: orderData.phone,
+      address: orderData.address || "",
+      city: "",
+      state: "",
+      country: "India",
+      zipcode: orderData.pincode || "",
+      udf1: orderData.items ? JSON.stringify(orderData.items) : "",
+      udf2: orderData.subtotal || "",
+      udf3: orderData.shipping || "",
+      udf4: "",
+      udf5: "",
+      access_code: ACCESS_CODE
+    };
+
+    // Compute SHA‑512 checksum (as per SBI ePay)
+    const sortedKeys = Object.keys(postData).sort();
+    const dataString = sortedKeys.map(key => postData[key]).join("|");
+    const checksum = generateChecksum(dataString);
+    postData.checksum = checksum;
+
+    res.json({
+      success: true,
+      gatewayUrl: SBIEPAY_GATEWAY_URL,
+      formFields: postData
+    });
   } catch (err) {
-    console.error("❌ Razorpay error:", err);
-    const message = err.error?.description || err.message || "Payment initiation failed";
-    res.status(500).json({ error: message });
+    console.error("Initiate payment error:", err);
+    res.status(500).json({ error: err.message });
   }
 });
 
-app.post("/verify-payment", (req, res) => {
+// Step 2: Handle SBI ePay callback (POST from payment gateway)
+app.post("/payment-response", async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-    const expected = crypto
-      .createHmac("sha256", RAZORPAY_SECRET)
-      .update(razorpay_order_id + "|" + razorpay_payment_id)
-      .digest("hex");
-    if (expected === razorpay_signature) {
-      res.json({ success: true });
+    const responseData = req.body;
+    const receivedChecksum = responseData.checksum;
+    const merchantOrderId = responseData.order_id;
+
+    // Verify checksum
+    if (!verifyChecksum(responseData, receivedChecksum)) {
+      console.error("Checksum mismatch for order", merchantOrderId);
+      return res.redirect("/?payment_status=failed&order_id=" + merchantOrderId);
+    }
+
+    const paymentStatus = responseData.payment_status; // 'success' / 'failure'
+    const sessionOrder = paymentSessions.get(merchantOrderId);
+
+    if (!sessionOrder) {
+      console.error("No session found for order", merchantOrderId);
+      return res.redirect("/?payment_status=unknown");
+    }
+
+    if (paymentStatus === "success") {
+      // Build final order object
+      const finalOrder = {
+        ...sessionOrder,
+        orderId: merchantOrderId,
+        timestamp: new Date().toISOString(),
+        status: "pending",
+        paymentMethod: "SBI ePay",
+        paymentId: responseData.transaction_id || "TXN_" + Date.now(),
+        razorpayOrderId: null
+      };
+      orders.unshift(finalOrder);
+
+      // Send to Google Sheets (fire-and-forget)
+      if (SHEETS_ENDPOINT) {
+        fetch(SHEETS_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(finalOrder),
+        }).catch(e => console.error("Sheet error:", e.message));
+      }
+
+      paymentSessions.delete(merchantOrderId);
+      // Redirect to frontend with success
+      return res.redirect(`/?payment_status=success&order_id=${merchantOrderId}`);
     } else {
-      res.status(400).json({ success: false, message: "Invalid signature" });
+      paymentSessions.delete(merchantOrderId);
+      return res.redirect(`/?payment_status=failed&order_id=${merchantOrderId}`);
     }
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false });
+    console.error("Payment response error:", err);
+    res.redirect("/?payment_status=error");
   }
 });
 
+// Get order details by ID (for confirmation page)
+app.get("/order/:orderId", (req, res) => {
+  const order = orders.find(o => o.orderId === req.params.orderId);
+  if (order) res.json(order);
+  else res.status(404).json({ error: "Order not found" });
+});
+
+// Save order (used if payment is already verified – not directly called from frontend now)
 app.post("/save-order", async (req, res) => {
   try {
     const orderData = {
       ...req.body,
-      orderId: "IYER" + Date.now().toString().slice(-8),
+      orderId: req.body.orderId || ("IYER" + Date.now().toString().slice(-8)),
       timestamp: new Date().toISOString(),
       status: "pending",
     };
     orders.unshift(orderData);
-    // Fire-and-forget to Google Sheets
-    fetch(SHEETS_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(orderData),
-    }).catch(e => console.error("Sheet error:", e.message));
+    if (SHEETS_ENDPOINT) {
+      fetch(SHEETS_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderData),
+      }).catch(e => console.error("Sheet error:", e.message));
+    }
     res.json({ success: true, orderId: orderData.orderId });
   } catch (err) {
     console.error(err);
@@ -117,33 +216,29 @@ app.post("/save-order", async (req, res) => {
   }
 });
 
+// ========== Admin endpoints (unchanged) ==========
 app.post("/admin/orders", (req, res) => {
   if (req.body.passcode !== ADMIN_PASSCODE) return res.status(401).json({ success: false });
   res.json({ success: true, orders });
 });
-
 app.post("/admin/update-order", (req, res) => {
   if (req.body.passcode !== ADMIN_PASSCODE) return res.status(401).json({ success: false });
   const order = orders.find(o => o.orderId === req.body.orderId);
   if (order) {
     order.status = req.body.status;
     res.json({ success: true });
-  } else {
-    res.status(404).json({ success: false });
-  }
+  } else res.status(404).json({ success: false });
 });
-
 app.post("/admin/delete-order", (req, res) => {
   if (req.body.passcode !== ADMIN_PASSCODE) return res.status(401).json({ success: false });
   const idx = orders.findIndex(o => o.orderId === req.body.orderId);
   if (idx !== -1) {
     orders.splice(idx, 1);
     res.json({ success: true });
-  } else {
-    res.status(404).json({ success: false });
-  }
+  } else res.status(404).json({ success: false });
 });
 
+// ========== Feedback endpoint ==========
 app.post("/feedback", async (req, res) => {
   try {
     const { email, message } = req.body;
@@ -174,5 +269,5 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
-  console.log(`🔑 Razorpay key: ${RAZORPAY_KEY_ID}`);
+  console.log(`🔐 SBI ePay merchant: ${MERCHANT_ID}`);
 });
